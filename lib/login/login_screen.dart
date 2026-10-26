@@ -51,52 +51,78 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(Icons.school, size: 80, color: Colors.blue),
-              const SizedBox(height: 16),
-              const Text('SIGELAB', style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold)),
-              const SizedBox(height: 32),
-              TextField(
-                controller: _usuarioController,
-                decoration: const InputDecoration(labelText: 'Usuario', prefixIcon: Icon(Icons.person), border: OutlineInputBorder()),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: _passwordController,
-                obscureText: _ocultarPassword,
-                decoration: InputDecoration(
-                  labelText: 'Contraseña',
-                  prefixIcon: const Icon(Icons.lock),
-                  suffixIcon: IconButton(
-                    icon: Icon(_ocultarPassword ? Icons.visibility : Icons.visibility_off),
-                    onPressed: () => setState(() => _ocultarPassword = !_ocultarPassword),
+          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+          child: Center(
+            child: ConstrainedBox(
+              // Limita el ancho en pantallas grandes (Escritorio/Web)
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Card(
+                elevation: Theme.of(context).brightness == Brightness.dark ? 2 : 4,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                child: Padding(
+                  padding: const EdgeInsets.all(28.0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.school, size: 70, color: Colors.blue),
+                      const SizedBox(height: 12),
+                      const Text(
+                        'SIGELAB',
+                        style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 28),
+                      TextField(
+                        controller: _usuarioController,
+                        decoration: const InputDecoration(
+                          labelText: 'Usuario',
+                          prefixIcon: Icon(Icons.person),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _passwordController,
+                        obscureText: _ocultarPassword,
+                        decoration: InputDecoration(
+                          labelText: 'Contraseña',
+                          prefixIcon: const Icon(Icons.lock),
+                          suffixIcon: IconButton(
+                            icon: Icon(_ocultarPassword ? Icons.visibility : Icons.visibility_off),
+                            onPressed: () => setState(() => _ocultarPassword = !_ocultarPassword),
+                          ),
+                          border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+                        ),
+                      ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 48,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                          onPressed: _cargando ? null : _hacerLogin,
+                          child: _cargando
+                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                              : const Text('Iniciar Sesión', style: TextStyle(fontSize: 16)),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextButton(
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(builder: (context) => const RegistroScreen()),
+                          );
+                        },
+                        child: const Text('¿Es tu primera vez aquí? Regístrate'),
+                      ),
+                    ],
                   ),
-                  border: const OutlineInputBorder(),
                 ),
               ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  onPressed: _cargando ? null : _hacerLogin,
-                  child: _cargando ? const CircularProgressIndicator(color: Colors.white) : const Text('Iniciar Sesión'),
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextButton(
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (context) => const RegistroScreen()),
-                  );
-                },
-                child: const Text('¿Es tu primera vez aquí? Regístrate'),
-              ),
-            ],
+            ),
           ),
         ),
       ),
