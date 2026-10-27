@@ -21,6 +21,17 @@ class _RegistroScreenState extends State<RegistroScreen> {
   bool _cargando = false;
   bool _ocultarPassword = true;
 
+  @override
+  void dispose() {
+    _nombreController.dispose();
+    _apellidoController.dispose();
+    _codigoController.dispose();
+    _correoController.dispose();
+    _usuarioController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
   Future<void> _hacerRegistro() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -73,47 +84,83 @@ class _RegistroScreenState extends State<RegistroScreen> {
                       children: [
                         TextFormField(
                           controller: _nombreController,
-                          decoration: const InputDecoration(labelText: 'Nombre', border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10)))),
-                          validator: (v) => v!.isEmpty ? 'Requerido' : null,
+                          textInputAction: TextInputAction.next,
+                          decoration: const InputDecoration(
+                            labelText: 'Nombre',
+                            prefixIcon: Icon(Icons.person_outline),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+                          ),
+                          validator: (v) => (v == null || v.trim().isEmpty) ? 'Campo requerido' : null,
                         ),
                         const SizedBox(height: 14),
                         TextFormField(
                           controller: _apellidoController,
-                          decoration: const InputDecoration(labelText: 'Apellido', border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10)))),
-                          validator: (v) => v!.isEmpty ? 'Requerido' : null,
+                          textInputAction: TextInputAction.next,
+                          decoration: const InputDecoration(
+                            labelText: 'Apellido',
+                            prefixIcon: Icon(Icons.person_outline),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+                          ),
+                          validator: (v) => (v == null || v.trim().isEmpty) ? 'Campo requerido' : null,
                         ),
                         const SizedBox(height: 14),
                         TextFormField(
                           controller: _codigoController,
-                          decoration: const InputDecoration(labelText: 'Código Personal', border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10)))),
-                          validator: (v) => v!.isEmpty ? 'Requerido' : null,
+                          textInputAction: TextInputAction.next,
+                          decoration: const InputDecoration(
+                            labelText: 'Código Personal',
+                            prefixIcon: Icon(Icons.badge_outlined),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+                          ),
+                          validator: (v) => (v == null || v.trim().isEmpty) ? 'Campo requerido' : null,
                         ),
                         const SizedBox(height: 14),
                         TextFormField(
                           controller: _correoController,
                           keyboardType: TextInputType.emailAddress,
-                          decoration: const InputDecoration(labelText: 'Correo Electrónico', border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10)))),
-                          validator: (v) => v!.isEmpty ? 'Requerido' : null,
+                          textInputAction: TextInputAction.next,
+                          decoration: const InputDecoration(
+                            labelText: 'Correo Electrónico',
+                            prefixIcon: Icon(Icons.email_outlined),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+                          ),
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) return 'Campo requerido';
+                            if (!v.contains('@') || !v.contains('.')) return 'Correo inválido';
+                            return null;
+                          },
                         ),
                         const SizedBox(height: 14),
                         TextFormField(
                           controller: _usuarioController,
-                          decoration: const InputDecoration(labelText: 'Nuevo Usuario', border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10)))),
-                          validator: (v) => v!.isEmpty ? 'Requerido' : null,
+                          textInputAction: TextInputAction.next,
+                          decoration: const InputDecoration(
+                            labelText: 'Nuevo Usuario',
+                            prefixIcon: Icon(Icons.account_circle_outlined),
+                            border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+                          ),
+                          validator: (v) => (v == null || v.trim().isEmpty) ? 'Campo requerido' : null,
                         ),
                         const SizedBox(height: 14),
                         TextFormField(
                           controller: _passwordController,
                           obscureText: _ocultarPassword,
+                          textInputAction: TextInputAction.done,
+                          onFieldSubmitted: (_) => _cargando ? null : _hacerRegistro(),
                           decoration: InputDecoration(
                             labelText: 'Nueva Contraseña',
+                            prefixIcon: const Icon(Icons.lock_outline),
                             border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
                             suffixIcon: IconButton(
                               icon: Icon(_ocultarPassword ? Icons.visibility : Icons.visibility_off),
                               onPressed: () => setState(() => _ocultarPassword = !_ocultarPassword),
                             ),
                           ),
-                          validator: (v) => v!.isEmpty ? 'Requerido' : null,
+                          validator: (v) {
+                            if (v == null || v.trim().isEmpty) return 'Campo requerido';
+                            if (v.trim().length < 6) return 'Mínimo 6 caracteres';
+                            return null;
+                          },
                         ),
                         const SizedBox(height: 24),
                         SizedBox(
@@ -125,7 +172,11 @@ class _RegistroScreenState extends State<RegistroScreen> {
                             ),
                             onPressed: _cargando ? null : _hacerRegistro,
                             child: _cargando
-                                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                                ? const SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                  )
                                 : const Text('Crear Cuenta', style: TextStyle(fontSize: 16)),
                           ),
                         ),

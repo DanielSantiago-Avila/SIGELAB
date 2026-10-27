@@ -17,6 +17,13 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _cargando = false;
   bool _ocultarPassword = true;
 
+  @override
+  void dispose() {
+    _usuarioController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
   Future<void> _hacerLogin() async {
     String usuario = _usuarioController.text.trim();
     String password = _passwordController.text.trim();
@@ -38,7 +45,8 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(res['mensaje']), backgroundColor: Colors.green),
       );
-      // TODO: Navegar a tu vista principal / Home
+      
+      // Navigator.pushReplacementNamed(context, '/home');
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(res['mensaje']), backgroundColor: Colors.red),
@@ -54,7 +62,6 @@ class _LoginScreenState extends State<LoginScreen> {
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
           child: Center(
             child: ConstrainedBox(
-              // Limita el ancho en pantallas grandes (Escritorio/Web)
               constraints: const BoxConstraints(maxWidth: 420),
               child: Card(
                 elevation: Theme.of(context).brightness == Brightness.dark ? 2 : 4,
@@ -74,6 +81,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 28),
                       TextField(
                         controller: _usuarioController,
+                        textInputAction: TextInputAction.next,
                         decoration: const InputDecoration(
                           labelText: 'Usuario',
                           prefixIcon: Icon(Icons.person),
@@ -84,6 +92,8 @@ class _LoginScreenState extends State<LoginScreen> {
                       TextField(
                         controller: _passwordController,
                         obscureText: _ocultarPassword,
+                        textInputAction: TextInputAction.done,
+                        onSubmitted: (_) => _cargando ? null : _hacerLogin(),
                         decoration: InputDecoration(
                           labelText: 'Contraseña',
                           prefixIcon: const Icon(Icons.lock),
@@ -104,7 +114,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           onPressed: _cargando ? null : _hacerLogin,
                           child: _cargando
-                              ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                              ? const SizedBox(
+                                  width: 20, 
+                                  height: 20, 
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                )
                               : const Text('Iniciar Sesión', style: TextStyle(fontSize: 16)),
                         ),
                       ),
