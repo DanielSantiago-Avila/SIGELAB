@@ -31,8 +31,7 @@ dependencies:
   flutter:
     sdk: flutter
   crypto: ^3.0.3
-  mssql_connection: ^1.0.1
-
+  http: ^1.2.0
   cupertino_icons: ^1.0.8
 
 dev_dependencies:
