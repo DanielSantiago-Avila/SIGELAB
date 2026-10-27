@@ -2,19 +2,14 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class AuthService {
-  // Apunta a la IP pública del servidor AWS EC2 en el puerto 80
   final String _baseUrl = 'http://18.119.123.181/api/Auth';
 
-  // 1. Iniciar sesión mediante C# Web API en AWS EC2
   Future<Map<String, dynamic>> iniciarSesion(String usuario, String password) async {
     try {
       final response = await http.post(
         Uri.parse('$_baseUrl/login'),
         headers: {'Content-Type': 'application/json'},
-        body: jsonEncode({
-          'usuario': usuario,
-          'password': password,
-        }),
+        body: jsonEncode({'usuario': usuario, 'password': password}),
       );
 
       if (response.statusCode == 200) {
@@ -27,7 +22,6 @@ class AuthService {
     }
   }
 
-  // 2. Registrar usuario mediante C# Web API en AWS EC2
   Future<Map<String, dynamic>> registrarUsuario({
     required String nombre,
     required String apellido,
