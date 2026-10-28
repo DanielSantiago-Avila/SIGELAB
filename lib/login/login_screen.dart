@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'auth_service.dart';
 import 'registro_screen.dart';
+import '../home/home_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -43,13 +44,28 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (res['exito']) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(res['mensaje']), backgroundColor: Colors.green),
+        SnackBar(
+          content: Text(res['mensaje'] ?? '¡Bienvenido!'), 
+          backgroundColor: Colors.green,
+        ),
       );
+
+      // REDIRIGIR A LA PANTALLA DE INICIO (HOME)
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+      );
+<<<<<<< HEAD
       
       // Navigator.pushReplacementNamed(context, '/home');
+=======
+>>>>>>> gerson
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(res['mensaje']), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text(res['mensaje'] ?? 'Error al iniciar sesión'), 
+          backgroundColor: Colors.red,
+        ),
       );
     }
   }
