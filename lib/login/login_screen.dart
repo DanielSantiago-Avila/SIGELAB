@@ -55,11 +55,7 @@ class _LoginScreenState extends State<LoginScreen> {
         context,
         MaterialPageRoute(builder: (context) => const HomeScreen()),
       );
-<<<<<<< HEAD
-      
-      // Navigator.pushReplacementNamed(context, '/home');
-=======
->>>>>>> gerson
+
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
