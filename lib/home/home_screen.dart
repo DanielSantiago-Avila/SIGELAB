@@ -18,6 +18,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   // Azul institucional de SIGELAB
   final Color primaryDark = const Color(0xFF163C66);
@@ -36,11 +37,51 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget build(BuildContext context) {
     final iniciales = _obtenerIniciales(widget.nombreUsuario);
 
-    return Scaffold(
-      backgroundColor: const Color(0xFFF4F6F9),
-      body: Row(
-        children: [
+    final anchoPantalla = MediaQuery.sizeOf(context).width;
+    final esPantallaPequena = anchoPantalla < 700;
+
+    return SafeArea(
+      child: Scaffold(
+        key: _scaffoldKey,
+        backgroundColor: const Color(0xFFF4F6F9),
+        drawer: esPantallaPequena
+    ? Drawer(
+        child: SafeArea(
+          child: ListView(
+            children: [
+              const DrawerHeader(
+                child: Text(
+                  'SIGELAB',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Icons.dashboard),
+                title: const Text('Dashboard'),
+                onTap: () {
+                  setState(() => _selectedIndex = 0);
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.science_outlined),
+                title: const Text('Laboratorios'),
+                onTap: () {
+                  setState(() => _selectedIndex = 2);
+                  Navigator.pop(context);
+                },
+              ),
+            ],
+          ),
+        ),
+      )
+    : null,
+        body: Row(        children: [
           // ---------------- MENU LATERAL (SIDEBAR) ----------------
+        if (!esPantallaPequena)
           Container(
             width: 250,
             color: Colors.white,
@@ -187,32 +228,57 @@ class _HomeScreenState extends State<HomeScreen> {
               children: [
                 // Encabezado Superior (Header)
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 18),
+
+                  padding: EdgeInsets.symmetric(
+                    horizontal: esPantallaPequena ? 12 : 32,
+                    vertical: esPantallaPequena ? 12 : 18,
+                  ),
+
+
                   color: Colors.white,
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'PANEL ADMINISTRATIVO',
-                            style: TextStyle(
-                              fontSize: 10,
-                              color: Colors.grey,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          Text(
-                            _obtenerTitulo(_selectedIndex),
-                            style: TextStyle(
-                              fontSize: 26,
-                              fontWeight: FontWeight.bold,
-                              color: primaryDark,
-                            ),
-                          ),
-                        ],
+
+                    if (esPantallaPequena)
+                      IconButton(
+                        icon: const Icon(Icons.menu),
+                        color: primaryDark,
+                        tooltip: 'Abrir menú',
+                        onPressed: () {
+                          _scaffoldKey.currentState?.openDrawer();
+                        },
                       ),
+
+
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (!esPantallaPequena)
+                              const Text(
+                                'PANEL ADMINISTRATIVO',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.grey,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            Text(
+                              _obtenerTitulo(_selectedIndex),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: esPantallaPequena ? 18 : 26,
+                                fontWeight: FontWeight.bold,
+                                color: primaryDark,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      
                       // Pill de perfil en la esquina superior derecha dinámico
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
@@ -254,8 +320,9 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   // Renderiza la pantalla correspondiente al menú seleccionado
   Widget _buildBodyContent() {
