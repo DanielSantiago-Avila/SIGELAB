@@ -46,9 +46,12 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: const Color(0xFFF4F6F9),
         drawer: esPantallaPequena
     ? Drawer(
-        child: SafeArea(
-          child: ListView(
-            children: [
+      child: SafeArea(
+        child: Column(
+          children: [
+            Expanded(
+              child: ListView(
+                children: [
               const DrawerHeader(
                 child: Text(
                   'SIGELAB',
@@ -58,11 +61,20 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
               ),
+
               ListTile(
                 leading: const Icon(Icons.dashboard),
                 title: const Text('Dashboard'),
                 onTap: () {
                   setState(() => _selectedIndex = 0);
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.people_outline),
+                title: const Text('Usuarios'),
+                onTap: () {
+                  setState(() => _selectedIndex = 1);
                   Navigator.pop(context);
                 },
               ),
@@ -74,11 +86,113 @@ class _HomeScreenState extends State<HomeScreen> {
                   Navigator.pop(context);
                 },
               ),
+              ListTile(
+                leading: const Icon(Icons.devices_outlined),
+                title: const Text('Tipos de Equipo'),
+                onTap: () {
+                  setState(() => _selectedIndex = 3);
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.inventory_2_outlined),
+                title: const Text('Inventario y Equipos'),
+                onTap: () {
+                  setState(() => _selectedIndex = 4);
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.front_hand_outlined),
+                title: const Text('Préstamos'),
+                onTap: () {
+                  setState(() => _selectedIndex = 5);
+                  Navigator.pop(context);
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.replay),
+                title: const Text('Devoluciones'),
+                  onTap: () {
+                    setState(() => _selectedIndex = 6);
+
+              Navigator.pop(context);
+                            },
+                          ), // Cierra ListTile de Devoluciones
+                        ], // Cierra children del ListView
+                      ), // Cierra ListView
+                    ), // Cierra Expanded
+
+                    // Tarjeta de perfil al fondo del menú
+
+                  Container(          margin: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFFF8FAFC),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFE2E8F0)),
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: const Color(0xFFD5E5FA),
+                    child: Text(
+                      iniciales,
+                      style: const TextStyle(
+                        color: Color(0xFF173B64),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.nombreUsuario,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          widget.rol,
+                          style: const TextStyle(color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const Divider(height: 24),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.logout),
+                title: const Text('Cerrar sesión'),
+                onTap: () {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const LoginScreen(),
+                    ),
+                    (route) => false,
+                  );
+                },
+              ),
             ],
           ),
         ),
-      )
-    : null,
+      ],
+    ),
+  ),
+)
+: null,
+
+
         body: Row(        children: [
           // ---------------- MENU LATERAL (SIDEBAR) ----------------
         if (!esPantallaPequena)
