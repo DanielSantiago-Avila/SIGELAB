@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../login/login_screen.dart';
 import 'package:sigelab/laboratorio/laboratorios_screen.dart';
 import 'dashboard_screen.dart';
+import '../mantenimiento/mantenimiento_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final String nombreUsuario;
@@ -287,10 +288,11 @@ Widget _buildBodyContent() {
   switch (_selectedIndex) {
     case 0:
       return DashboardScreen();
-
     case 2:
       return const LaboratoriosScreen();
-
+    case 7:
+      return const MantenimientoScreen();
+      
     default:
       return Center(
         child: Padding(
