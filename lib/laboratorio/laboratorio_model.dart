@@ -19,14 +19,42 @@ class Laboratorio {
 
   factory Laboratorio.fromJson(Map<String, dynamic> json) {
     return Laboratorio(
-      idLaboratorio: json['id_laboratorio'] ?? json['idLaboratorio'] ?? 0,
+      idLaboratorio: _convertirEntero(
+        json['idLaboratorio'] ?? json['id_laboratorio'],
+      ),
       codigo: json['codigo']?.toString() ?? '',
       nombre: json['nombre']?.toString() ?? '',
       ubicacion: json['ubicacion']?.toString() ?? '',
       descripcion: json['descripcion']?.toString() ?? '',
-      activo: json['activo'] == true || json['activo'] == 1,
-      capacidad: json['capacidad'] is int ? json['capacidad'] : int.tryParse(json['capacidad']?.toString() ?? '0') ?? 0,
+      activo: _convertirBooleano(json['activo']),
+      capacidad: _convertirEntero(json['capacidad']),
     );
+  }
+
+  static int _convertirEntero(dynamic valor) {
+    if (valor is int) {
+      return valor;
+    }
+
+    if (valor is num) {
+      return valor.toInt();
+    }
+
+    return int.tryParse(valor?.toString() ?? '') ?? 0;
+  }
+
+  static bool _convertirBooleano(dynamic valor) {
+    if (valor is bool) {
+      return valor;
+    }
+
+    if (valor is num) {
+      return valor != 0;
+    }
+
+    final texto = valor?.toString().toLowerCase().trim();
+
+    return texto == 'true' || texto == '1';
   }
 
   Map<String, dynamic> toJson() {
