@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../login/login_screen.dart';
 import 'package:sigelab/laboratorio/laboratorios_screen.dart';
+import '../qr/qr_scanner_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final String nombreUsuario;
@@ -119,6 +120,17 @@ class _HomeScreenState extends State<HomeScreen> {
               Navigator.pop(context);
                             },
                           ), // Cierra ListTile de Devoluciones
+
+// Opción para escanear códigos QR
+ListTile(
+  leading: const Icon(Icons.qr_code_scanner),
+  title: const Text('Escanear QR'),
+  onTap: () {
+    setState(() => _selectedIndex = 7);
+    Navigator.pop(context);
+  },
+),
+
                         ], // Cierra children del ListView
                       ), // Cierra ListView
                     ), // Cierra Expanded
@@ -249,13 +261,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      _buildMenuItem(0, Icons.grid_view_rounded, 'Dashboard'),
-                      _buildMenuItem(1, Icons.people_outline, 'Usuarios'),
-                      _buildMenuItem(2, Icons.science_outlined, 'Laboratorios'),
-                      _buildMenuItem(3, Icons.devices_outlined, 'Tipos de Equipo'),
-                      _buildMenuItem(4, Icons.inventory_2_outlined, 'Inventario y Equipos'),
-                      _buildMenuItem(5, Icons.front_hand_outlined, 'Préstamos'),
-                      _buildMenuItem(6, Icons.replay, 'Devoluciones'),
+                        _buildMenuItem(0, Icons.grid_view_rounded, 'Dashboard'),
+                        _buildMenuItem(1, Icons.people_outline, 'Usuarios'),
+                        _buildMenuItem(2, Icons.science_outlined, 'Laboratorios'),
+                        _buildMenuItem(3, Icons.devices_outlined, 'Tipos de Equipo'),
+                        _buildMenuItem(4, Icons.inventory_2_outlined, 'Inventario y Equipos'),
+                        _buildMenuItem(5, Icons.front_hand_outlined, 'Préstamos'),
+                        _buildMenuItem(6, Icons.replay, 'Devoluciones'),
+                        _buildMenuItem(7, Icons.qr_code_scanner, 'Escanear QR'),
                     ],
                   ),
                 ),
@@ -439,12 +452,16 @@ class _HomeScreenState extends State<HomeScreen> {
 }
 
   // Renderiza la pantalla correspondiente al menú seleccionado
-  Widget _buildBodyContent() {
-    switch (_selectedIndex) {
-      case 2:
-        return const LaboratoriosScreen(); // Vista real conectada a BD
-      default:
-        return Center(
+Widget _buildBodyContent() {
+  switch (_selectedIndex) {
+    case 2:
+      return const LaboratoriosScreen();
+
+    case 7:
+      return const QrScannerScreen();
+
+    default:
+      return Center(
           child: Padding(
             padding: const EdgeInsets.all(24.0),
             child: Column(
@@ -549,8 +566,11 @@ class _HomeScreenState extends State<HomeScreen> {
         return 'Préstamos de Equipos';
       case 6:
         return 'Devoluciones';
+      case 7:
+        return 'Escanear código QR';
       default:
         return 'Dashboard general';
     }
   }
 }
+
