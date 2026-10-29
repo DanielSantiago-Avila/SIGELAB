@@ -55,11 +55,6 @@ class _LoginScreenState extends State<LoginScreen> {
         context,
         MaterialPageRoute(builder: (context) => const HomeScreen()),
       );
-// REDIRIGIR A LA PANTALLA DE INICIO (HOME)
-Navigator.pushReplacement(
-  context,
-  MaterialPageRoute(builder: (context) => const HomeScreen()),
-);
 } else {
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
@@ -67,8 +62,6 @@ Navigator.pushReplacement(
       backgroundColor: Colors.red,
     ),
   );
-}
-
 }
 
   @override
