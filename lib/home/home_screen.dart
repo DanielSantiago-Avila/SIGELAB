@@ -321,36 +321,37 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildDrawerMenuItem(_MenuEntry item) {
     final seleccionado = _selectedIndex == item.index;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 2),
-      decoration: BoxDecoration(
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Material(
         color: seleccionado ? const Color(0xFFE8F0FB) : Colors.transparent,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: ListTile(
-        selected: seleccionado,
-        leading: Icon(
-          item.icon,
-          color: seleccionado ? primaryDark : Colors.black87,
-          size: 21,
-        ),
-        title: Text(
-          item.title,
-          style: TextStyle(
-            color: seleccionado ? primaryDark : Colors.black87,
-            fontWeight: seleccionado ? FontWeight.w600 : FontWeight.normal,
-            fontSize: 14,
-          ),
-        ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        onTap: () {
-          setState(() {
-            _selectedIndex = item.index;
-          });
+        clipBehavior: Clip.antiAlias,
+        child: ListTile(
+          selected: seleccionado,
+          selectedTileColor: Colors.transparent,
+          leading: Icon(
+            item.icon,
+            color: seleccionado ? primaryDark : Colors.black87,
+            size: 21,
+          ),
+          title: Text(
+            item.title,
+            style: TextStyle(
+              color: seleccionado ? primaryDark : Colors.black87,
+              fontWeight: seleccionado ? FontWeight.w600 : FontWeight.normal,
+              fontSize: 14,
+            ),
+          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          onTap: () {
+            setState(() {
+              _selectedIndex = item.index;
+            });
 
-          // Cierra el menú después de seleccionar una opción.
-          Navigator.pop(context);
-        },
+            Navigator.pop(context);
+          },
+        ),
       ),
     );
   }
@@ -359,33 +360,34 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildMenuItem(_MenuEntry item) {
     final seleccionado = _selectedIndex == item.index;
 
-    return Container(
-      margin: const EdgeInsets.symmetric(vertical: 2),
-      decoration: BoxDecoration(
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Material(
         color: seleccionado ? primaryDark : Colors.transparent,
-        borderRadius: BorderRadius.circular(8),
-      ),
-      child: ListTile(
-        dense: true,
-        leading: Icon(
-          item.icon,
-          color: seleccionado ? Colors.white : Colors.black87,
-          size: 20,
-        ),
-        title: Text(
-          item.title,
-          style: TextStyle(
-            color: seleccionado ? Colors.white : Colors.black87,
-            fontWeight: seleccionado ? FontWeight.w600 : FontWeight.normal,
-            fontSize: 13,
-          ),
-        ),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-        onTap: () {
-          setState(() {
-            _selectedIndex = item.index;
-          });
-        },
+        clipBehavior: Clip.antiAlias,
+        child: ListTile(
+          dense: true,
+          leading: Icon(
+            item.icon,
+            color: seleccionado ? Colors.white : Colors.black87,
+            size: 20,
+          ),
+          title: Text(
+            item.title,
+            style: TextStyle(
+              color: seleccionado ? Colors.white : Colors.black87,
+              fontWeight: seleccionado ? FontWeight.w600 : FontWeight.normal,
+              fontSize: 13,
+            ),
+          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          onTap: () {
+            setState(() {
+              _selectedIndex = item.index;
+            });
+          },
+        ),
       ),
     );
   }
@@ -394,61 +396,69 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildMobileDrawerProfile(String iniciales) {
     return Container(
       margin: const EdgeInsets.all(12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
+      child: Material(
         color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: Color(0xFFE2E8F0)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              CircleAvatar(
-                backgroundColor: const Color(0xFFD5E5FA),
-                child: Text(
-                  iniciales,
-                  style: TextStyle(
-                    color: primaryDark,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.nombreUsuario,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+              Row(
+                children: [
+                  CircleAvatar(
+                    backgroundColor: const Color(0xFFD5E5FA),
+                    child: Text(
+                      iniciales,
+                      style: TextStyle(
+                        color: primaryDark,
                         fontWeight: FontWeight.bold,
-                        fontSize: 13,
                       ),
                     ),
-                    Text(
-                      widget.rol,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.nombreUsuario,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
+                        ),
+                        Text(
+                          widget.rol,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
+              ),
+              const Divider(height: 24),
+              ListTile(
+                dense: true,
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Icons.logout, size: 20),
+                title: const Text('Cerrar sesión'),
+                onTap: _cerrarSesion,
               ),
             ],
           ),
-          const Divider(height: 24),
-          ListTile(
-            dense: true,
-            contentPadding: EdgeInsets.zero,
-            leading: const Icon(Icons.logout, size: 20),
-            title: const Text('Cerrar sesión'),
-            onTap: _cerrarSesion,
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -457,73 +467,81 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildDesktopProfile(String iniciales) {
     return Container(
       margin: const EdgeInsets.all(12),
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
+      child: Material(
         color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: Color(0xFFE2E8F0)),
+        ),
+        clipBehavior: Clip.antiAlias,
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
             children: [
-              CircleAvatar(
-                radius: 18,
-                backgroundColor: const Color(0xFFD0E1F9),
-                child: Text(
-                  iniciales,
-                  style: TextStyle(
-                    color: primaryDark,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.nombreUsuario,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 18,
+                    backgroundColor: const Color(0xFFD0E1F9),
+                    child: Text(
+                      iniciales,
+                      style: TextStyle(
+                        color: primaryDark,
                         fontWeight: FontWeight.bold,
-                        fontSize: 12,
+                        fontSize: 13,
                       ),
                     ),
-                    Text(
-                      widget.rol,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                  ),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.nombreUsuario,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 12,
+                          ),
+                        ),
+                        Text(
+                          widget.rol,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey,
+                          ),
+                        ),
+                      ],
                     ),
-                  ],
+                  ),
+                ],
+              ),
+              const Divider(height: 20),
+              InkWell(
+                onTap: _cerrarSesion,
+                borderRadius: BorderRadius.circular(6),
+                child: const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 4),
+                  child: Row(
+                    children: [
+                      Icon(Icons.logout, size: 18, color: Colors.grey),
+                      SizedBox(width: 8),
+                      Text(
+                        'Cerrar sesión',
+                        style: TextStyle(fontSize: 13, color: Colors.grey),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ],
           ),
-          const Divider(height: 20),
-          InkWell(
-            onTap: _cerrarSesion,
-            borderRadius: BorderRadius.circular(6),
-            child: const Padding(
-              padding: EdgeInsets.symmetric(vertical: 4),
-              child: Row(
-                children: [
-                  Icon(Icons.logout, size: 18, color: Colors.grey),
-                  SizedBox(width: 8),
-                  Text(
-                    'Cerrar sesión',
-                    style: TextStyle(fontSize: 13, color: Colors.grey),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }

@@ -4,8 +4,7 @@ class MantenimientoScreen extends StatefulWidget {
   const MantenimientoScreen({super.key});
 
   @override
-  State<MantenimientoScreen> createState() =>
-      _MantenimientoScreenState();
+  State<MantenimientoScreen> createState() => _MantenimientoScreenState();
 }
 
 class _MantenimientoScreenState extends State<MantenimientoScreen> {
@@ -85,8 +84,18 @@ class _MantenimientoScreenState extends State<MantenimientoScreen> {
 
   String _formatearFecha(DateTime fecha) {
     const meses = [
-      'ene', 'feb', 'mar', 'abr', 'may', 'jun',
-      'jul', 'ago', 'sep', 'oct', 'nov', 'dic'
+      'ene',
+      'feb',
+      'mar',
+      'abr',
+      'may',
+      'jun',
+      'jul',
+      'ago',
+      'sep',
+      'oct',
+      'nov',
+      'dic',
     ];
 
     return '${fecha.day} ${meses[fecha.month - 1]} ${fecha.year}';
@@ -169,9 +178,8 @@ class _MantenimientoScreenState extends State<MantenimientoScreen> {
   }
 
   void _mostrarMensaje(String mensaje) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(mensaje)),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(mensaje)));
   }
 
   @override
@@ -185,8 +193,7 @@ class _MantenimientoScreenState extends State<MantenimientoScreen> {
           children: [
             Row(
               children: [
-                const Icon(Icons.build_circle_outlined,
-                    color: azul, size: 34),
+                const Icon(Icons.build_circle_outlined, color: azul, size: 34),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -212,11 +219,10 @@ class _MantenimientoScreenState extends State<MantenimientoScreen> {
                 ),
                 const Icon(Icons.notifications_none, color: azul),
                 const SizedBox(width: 8),
-                const Text('SIGELAB',
-                    style: TextStyle(
-                      color: azul,
-                      fontWeight: FontWeight.bold,
-                    )),
+                const Text(
+                  'SIGELAB',
+                  style: TextStyle(color: azul, fontWeight: FontWeight.bold),
+                ),
               ],
             ),
             const SizedBox(height: 22),
@@ -261,8 +267,7 @@ class _MantenimientoScreenState extends State<MantenimientoScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.symmetric(
-                horizontal: 12, vertical: 11),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
             decoration: BoxDecoration(
               color: const Color(0xFFFFF1F2),
               border: Border.all(color: const Color(0xFFFECACA)),
@@ -270,8 +275,7 @@ class _MantenimientoScreenState extends State<MantenimientoScreen> {
             ),
             child: const Row(
               children: [
-                Icon(Icons.warning_amber_rounded,
-                    color: Colors.red, size: 21),
+                Icon(Icons.warning_amber_rounded, color: Colors.red, size: 21),
                 SizedBox(width: 8),
                 Expanded(
                   child: Text(
@@ -285,9 +289,10 @@ class _MantenimientoScreenState extends State<MantenimientoScreen> {
                 CircleAvatar(
                   radius: 13,
                   backgroundColor: Colors.redAccent,
-                  child: Text('3',
-                      style: TextStyle(
-                          color: Colors.white, fontSize: 12)),
+                  child: Text(
+                    '3',
+                    style: TextStyle(color: Colors.white, fontSize: 12),
+                  ),
                 ),
               ],
             ),
@@ -304,50 +309,48 @@ class _MantenimientoScreenState extends State<MantenimientoScreen> {
               controller: _equiposScrollController,
               scrollDirection: Axis.horizontal,
               child: DataTable(
-              headingRowColor: WidgetStateProperty.all(
-                  const Color(0xFFF0F5FC)),
-              dataRowMinHeight: 45,
-              dataRowMaxHeight: 55,
-              horizontalMargin: 10,
-              columnSpacing: 18,
-              columns: const [
-                DataColumn(label: Text('ID Equipo')),
-                DataColumn(label: Text('Nombre')),
-                DataColumn(label: Text('Tipo')),
-                DataColumn(label: Text('Marca/Modelo')),
-                DataColumn(label: Text('Laboratorio')),
-                DataColumn(label: Text('Fecha registro')),
-              ],
-              rows: _equipos.map((equipo) {
-                final seleccionado = equipo['id'] == _equipoId;
+                headingRowColor: WidgetStateProperty.all(
+                  const Color(0xFFF0F5FC),
+                ),
+                dataRowMinHeight: 45,
+                dataRowMaxHeight: 55,
+                horizontalMargin: 10,
+                columnSpacing: 18,
+                columns: const [
+                  DataColumn(label: Text('ID Equipo')),
+                  DataColumn(label: Text('Nombre')),
+                  DataColumn(label: Text('Tipo')),
+                  DataColumn(label: Text('Marca/Modelo')),
+                  DataColumn(label: Text('Laboratorio')),
+                  DataColumn(label: Text('Fecha registro')),
+                ],
+                rows: _equipos.map((equipo) {
+                  final seleccionado = equipo['id'] == _equipoId;
 
-                return DataRow(
-                  selected: seleccionado,
-                  onSelectChanged: (_) {
-                    setState(() {
-                      _equipoId = equipo['id']!;
-                    });
-                  },
-                  cells: [
-                    DataCell(Text(equipo['id']!)),
-                    DataCell(Text(equipo['nombre']!)),
-                    DataCell(Text(equipo['tipo']!)),
-                    DataCell(Text(equipo['marca']!)),
-                    DataCell(Text(equipo['laboratorio']!)),
-                    DataCell(Text(equipo['fecha']!)),
-                  ],
-                );
-              }).toList(),
+                  return DataRow(
+                    selected: seleccionado,
+                    onSelectChanged: (_) {
+                      setState(() {
+                        _equipoId = equipo['id']!;
+                      });
+                    },
+                    cells: [
+                      DataCell(Text(equipo['id']!)),
+                      DataCell(Text(equipo['nombre']!)),
+                      DataCell(Text(equipo['tipo']!)),
+                      DataCell(Text(equipo['marca']!)),
+                      DataCell(Text(equipo['laboratorio']!)),
+                      DataCell(Text(equipo['fecha']!)),
+                    ],
+                  );
+                }).toList(),
               ),
             ),
           ),
           const SizedBox(height: 8),
           Text(
             'Seleccionado: $_equipoId',
-            style: const TextStyle(
-              color: azul,
-              fontWeight: FontWeight.w600,
-            ),
+            style: const TextStyle(color: azul, fontWeight: FontWeight.w600),
           ),
         ],
       ),
@@ -370,7 +373,7 @@ class _MantenimientoScreenState extends State<MantenimientoScreen> {
                 children: [
                   _etiqueta('ID Equipo seleccionado'),
                   DropdownButtonFormField<String>(
-                    value: _equipoId,
+                    initialValue: _equipoId,
                     isExpanded: true,
                     decoration: _decoracion(),
                     items: _equipos.map((equipo) {
@@ -404,11 +407,7 @@ class _MantenimientoScreenState extends State<MantenimientoScreen> {
 
               if (compacto) {
                 return Column(
-                  children: [
-                    equipo,
-                    const SizedBox(height: 12),
-                    fecha,
-                  ],
+                  children: [equipo, const SizedBox(height: 12), fecha],
                 );
               }
 
@@ -442,17 +441,14 @@ class _MantenimientoScreenState extends State<MantenimientoScreen> {
             minLines: 3,
             maxLines: 4,
             decoration: _decoracion(
-              hint:
-                  'Ej: Cámara Canon 80D: limpieza y calibración; revisión del equipo.',
+              hint: 'Ej: Cámara Canon 80D: limpieza y calibración; revisión del equipo.',
             ),
           ),
           const SizedBox(height: 14),
           _etiqueta('Técnico responsable'),
           TextField(
             controller: _tecnicoController,
-            decoration: _decoracion(
-              hint: 'Ej: Técnico externo - López',
-            ),
+            decoration: _decoracion(hint: 'Ej: Técnico externo - López'),
           ),
           const SizedBox(height: 18),
           Wrap(
@@ -467,7 +463,9 @@ class _MantenimientoScreenState extends State<MantenimientoScreen> {
                   backgroundColor: azulClaro,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 22, vertical: 16),
+                    horizontal: 22,
+                    vertical: 16,
+                  ),
                 ),
               ),
               OutlinedButton.icon(
@@ -477,7 +475,9 @@ class _MantenimientoScreenState extends State<MantenimientoScreen> {
                 style: OutlinedButton.styleFrom(
                   foregroundColor: azulClaro,
                   padding: const EdgeInsets.symmetric(
-                      horizontal: 22, vertical: 16),
+                    horizontal: 22,
+                    vertical: 16,
+                  ),
                 ),
               ),
             ],
@@ -507,8 +507,7 @@ class _MantenimientoScreenState extends State<MantenimientoScreen> {
                     minLines: 2,
                     maxLines: 3,
                     decoration: _decoracion(
-                      hint:
-                          'Ej: Reemplazo de obturador, limpieza y calibración completada.',
+                      hint: 'Ej: Reemplazo de obturador, limpieza y calibración completada.',
                     ),
                   ),
                   const SizedBox(height: 14),
@@ -543,8 +542,11 @@ class _MantenimientoScreenState extends State<MantenimientoScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.check_circle,
-                            color: Colors.white, size: 18),
+                        const Icon(
+                          Icons.check_circle,
+                          color: Colors.white,
+                          size: 18,
+                        ),
                         const SizedBox(width: 8),
                         Text(
                           _resultado,
@@ -568,15 +570,20 @@ class _MantenimientoScreenState extends State<MantenimientoScreen> {
                     _elegirFechaSalida,
                   ),
                   const SizedBox(height: 12),
-                  CheckboxListTile(
-                    contentPadding: EdgeInsets.zero,
-                    controlAffinity: ListTileControlAffinity.leading,
-                    title: const Text('Registrar salida / cierre'),
-                    value: _registrarSalida,
-                    activeColor: azulClaro,
-                    onChanged: (valor) {
-                      setState(() => _registrarSalida = valor ?? false);
-                    },
+                  Material(
+                    color: Colors.transparent,
+                    borderRadius: BorderRadius.circular(9),
+                    clipBehavior: Clip.antiAlias,
+                    child: CheckboxListTile(
+                      contentPadding: EdgeInsets.zero,
+                      controlAffinity: ListTileControlAffinity.leading,
+                      title: const Text('Registrar salida / cierre'),
+                      value: _registrarSalida,
+                      activeColor: azulClaro,
+                      onChanged: (valor) {
+                        setState(() => _registrarSalida = valor ?? false);
+                      },
+                    ),
                   ),
                   const SizedBox(height: 10),
                   FilledButton.icon(
@@ -594,11 +601,7 @@ class _MantenimientoScreenState extends State<MantenimientoScreen> {
 
               if (compacto) {
                 return Column(
-                  children: [
-                    reparacion,
-                    const SizedBox(height: 20),
-                    salida,
-                  ],
+                  children: [reparacion, const SizedBox(height: 20), salida],
                 );
               }
 
@@ -643,11 +646,7 @@ class _MantenimientoScreenState extends State<MantenimientoScreen> {
 
               if (compacto) {
                 return Column(
-                  children: [
-                    resultado,
-                    const SizedBox(height: 10),
-                    resumen,
-                  ],
+                  children: [resultado, const SizedBox(height: 10), resumen],
                 );
               }
 
@@ -724,10 +723,7 @@ class _MantenimientoScreenState extends State<MantenimientoScreen> {
       filled: true,
       fillColor: Colors.white,
       isDense: true,
-      contentPadding: const EdgeInsets.symmetric(
-        horizontal: 12,
-        vertical: 13,
-      ),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 13),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(7),
         borderSide: const BorderSide(color: Color(0xFFD2E0F5)),
@@ -765,32 +761,32 @@ class _MantenimientoScreenState extends State<MantenimientoScreen> {
     String grupo,
     ValueChanged<String?> alCambiar,
   ) {
-    return InkWell(
-      onTap: () => alCambiar(texto),
-      borderRadius: BorderRadius.circular(20),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-        decoration: BoxDecoration(
-          border: Border.all(
-            color: grupo == texto ? azulClaro : const Color(0xFFD7E3F5),
-          ),
-          borderRadius: BorderRadius.circular(20),
-          color: grupo == texto
-              ? const Color(0xFFEAF2FF)
-              : Colors.white,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Radio<String>(
-              value: texto,
-              groupValue: grupo,
-              activeColor: azulClaro,
-              onChanged: alCambiar,
-              visualDensity: VisualDensity.compact,
+    return RadioGroup<String>(
+      groupValue: grupo,
+      onChanged: alCambiar,
+      child: InkWell(
+        onTap: () => alCambiar(texto),
+        borderRadius: BorderRadius.circular(20),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+          decoration: BoxDecoration(
+            border: Border.all(
+              color: grupo == texto ? azulClaro : const Color(0xFFD7E3F5),
             ),
-            Text(texto, style: const TextStyle(fontSize: 12)),
-          ],
+            borderRadius: BorderRadius.circular(20),
+            color: grupo == texto ? const Color(0xFFEAF2FF) : Colors.white,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Radio<String>(
+                value: texto,
+                activeColor: azulClaro,
+                visualDensity: VisualDensity.compact,
+              ),
+              Text(texto, style: const TextStyle(fontSize: 12)),
+            ],
+          ),
         ),
       ),
     );
