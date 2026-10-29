@@ -55,16 +55,14 @@ class _LoginScreenState extends State<LoginScreen> {
         context,
         MaterialPageRoute(builder: (context) => const HomeScreen()),
       );
-
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(res['mensaje'] ?? 'Error al iniciar sesión'), 
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
+} else {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(res['mensaje'] ?? 'Error al iniciar sesión'),
+      backgroundColor: Colors.red,
+    ),
+  );
+}
 
   @override
   Widget build(BuildContext context) {
