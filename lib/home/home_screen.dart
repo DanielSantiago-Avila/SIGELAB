@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../login/login_screen.dart';
 import 'package:sigelab/laboratorio/laboratorios_screen.dart';
+import 'dashboard_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final String nombreUsuario;
@@ -76,35 +77,61 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
                 const SizedBox(height: 28),
 
-                // Secciones del Menú
-                Expanded(
-                  child: ListView(
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    children: [
-                      const Padding(
-                        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-                        child: Text(
-                          'SIGELAB · ADMINISTRADOR',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.grey,
-                            fontWeight: FontWeight.bold,
-                            letterSpacing: 0.5,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      _buildMenuItem(0, Icons.grid_view_rounded, 'Dashboard'),
-                      _buildMenuItem(1, Icons.people_outline, 'Usuarios'),
-                      _buildMenuItem(2, Icons.science_outlined, 'Laboratorios'),
-                      _buildMenuItem(3, Icons.devices_outlined, 'Tipos de Equipo'),
-                      _buildMenuItem(4, Icons.inventory_2_outlined, 'Inventario y Equipos'),
-                      _buildMenuItem(5, Icons.front_hand_outlined, 'Préstamos'),
-                      _buildMenuItem(6, Icons.replay, 'Devoluciones'),
-                    ],
+          // Secciones del Menú
+          Expanded(
+            child: ListView(
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              children: [
+                const Padding(
+                  padding: EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 6,
+                  ),
+                  child: Text(
+                    'SIGELAB · ADMINISTRADOR',
+                    style: TextStyle(
+                      fontSize: 10,
+                      color: Colors.grey,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 0.5,
+                    ),
                   ),
                 ),
+                const SizedBox(height: 4),
 
+                _buildMenuItem(
+                  0, Icons.grid_view_rounded, 'Dashboard',
+                ),
+                _buildMenuItem(
+                  1, Icons.people_outline, 'Usuarios',
+                ),
+                _buildMenuItem(
+                  2, Icons.science_outlined, 'Laboratorios',
+                ),
+                _buildMenuItem(
+                  3, Icons.devices_outlined, 'Tipos de Equipo',
+                ),
+                _buildMenuItem(
+                  4, Icons.inventory_2_outlined, 'Inventario y Equipos',
+                ),
+                _buildMenuItem(
+                  5, Icons.front_hand_outlined, 'Préstamos',
+                ),
+                _buildMenuItem(
+                  6, Icons.replay, 'Devoluciones',
+                ),
+                _buildMenuItem(
+                  7, Icons.build_outlined, 'Mantenimiento',
+                ),
+                _buildMenuItem(
+                  8, Icons.bar_chart_outlined, 'Reportes',
+                ),
+                _buildMenuItem(
+                  9, Icons.fact_check_outlined, 'Auditoría',
+                ),
+              ],
+            ),
+          ),
                 // Perfil de usuario dinámico e Iniciar/Cerrar sesión en el pie
                 Container(
                   margin: const EdgeInsets.all(12),
@@ -256,68 +283,47 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
     );
   }
+Widget _buildBodyContent() {
+  switch (_selectedIndex) {
+    case 0:
+      return DashboardScreen();
 
-  // Renderiza la pantalla correspondiente al menú seleccionado
-  Widget _buildBodyContent() {
-    switch (_selectedIndex) {
-      case 2:
-        return const LaboratoriosScreen(); // Vista real conectada a BD
-      default:
-        return Center(
-          child: Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.check_circle_outline,
-                  size: 80,
+    case 2:
+      return const LaboratoriosScreen();
+
+    default:
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.construction_outlined,
+                size: 70,
+                color: primaryDark,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                _obtenerTitulo(_selectedIndex),
+                style: TextStyle(
+                  fontSize: 25,
+                  fontWeight: FontWeight.bold,
                   color: primaryDark,
                 ),
-                const SizedBox(height: 20),
-                Text(
-                  '¡Bienvenido a SIGELAB!',
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.bold,
-                    color: primaryDark,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  'Conexión exitosa con el servidor backend en AWS EC2.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 15, color: Colors.grey),
-                ),
-                const SizedBox(height: 28),
-                ElevatedButton.icon(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryDark,
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Sección de métricas y gráficos en desarrollo...'),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.dashboard, color: Colors.white),
-                  label: const Text(
-                    'Ir al Dashboard',
-                    style: TextStyle(color: Colors.white, fontSize: 15),
-                  ),
-                ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 10),
+              const Text(
+                'Este módulo está pendiente de desarrollo.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey),
+              ),
+            ],
           ),
-        );
-    }
+        ),
+      );
   }
-
+}
   // Helper para construir ítems del menú con estado de selección
   Widget _buildMenuItem(int index, IconData icon, String title) {
     final isSelected = _selectedIndex == index;
@@ -352,24 +358,30 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // Título dinámico para la cabecera
-  String _obtenerTitulo(int index) {
-    switch (index) {
-      case 0:
-        return 'Dashboard general';
-      case 1:
-        return 'Gestión de Usuarios';
-      case 2:
-        return 'Gestión de laboratorios';
-      case 3:
-        return 'Tipos de Equipo';
-      case 4:
-        return 'Inventario y Equipos';
-      case 5:
-        return 'Préstamos de Equipos';
-      case 6:
-        return 'Devoluciones';
-      default:
-        return 'Dashboard general';
+ String _obtenerTitulo(int index) {
+  switch (index) {
+    case 0:
+      return 'Dashboard General';
+    case 1:
+      return 'Gestión de Usuarios';
+    case 2:
+      return 'Gestión de Laboratorios';
+    case 3:
+      return 'Tipos de Equipo';
+    case 4:
+      return 'Inventario y Equipos';
+    case 5:
+      return 'Préstamos de Equipos';
+    case 6:
+      return 'Devoluciones';
+    case 7:
+      return 'Mantenimiento';
+    case 8:
+      return 'Reportes';
+    case 9:
+      return 'Auditoría';
+    default:
+      return 'Dashboard General';
     }
   }
 }
