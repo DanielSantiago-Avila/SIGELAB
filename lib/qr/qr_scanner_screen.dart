@@ -2,6 +2,9 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
+import 'qr_equipo_service.dart';
+import 'qr_resultado_screen.dart';
+
 class QrScannerScreen extends StatefulWidget {
   const QrScannerScreen({super.key});
 
@@ -15,6 +18,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     formats: [BarcodeFormat.qrCode],
   );
 
+  final QrEquipoService _equipoService = QrEquipoService();
+
   bool _procesando = false;
 
   Future<void> _detectarCodigo(BarcodeCapture capture) async {
@@ -23,7 +28,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     String? codigo;
 
     for (final barcode in capture.barcodes) {
-      final valor = barcode.rawValue;
+      final valor = barcode.rawValue?.trim();
+
       if (valor != null && valor.isNotEmpty) {
         codigo = valor;
         break;
@@ -32,31 +38,50 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
     if (codigo == null) return;
 
-    _procesando = true;
-    await _controller.stop();
+    setState(() => _procesando = true);
 
-    if (!mounted) return;
+    try {
+      await _controller.stop();
 
-    final codigoLeido = codigo;
+      if (!mounted) return;
 
-    await showDialog<void>(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text('Código QR detectado'),
-        content: SelectableText(codigoLeido),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text('Escanear otro'),
-          ),
-        ],
-      ),
-    );
+      final equipo = await _equipoService.obtenerEquipoPorQr(codigo);
 
-    if (!mounted) return;
+      if (!mounted) return;
 
-    _procesando = false;
-    await _controller.start();
+      await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => QrResultadoScreen(equipo: equipo),
+        ),
+      );
+    } catch (error) {
+      if (!mounted) return;
+
+      await showDialog<void>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('No se pudo consultar el equipo'),
+          content: Text(error.toString()),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Aceptar'),
+            ),
+          ],
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _procesando = false);
+
+        try {
+          await _controller.start();
+        } catch (_) {
+          // La cámara puede no estar disponible al regresar.
+        }
+      }
+    }
   }
 
   @override
@@ -88,22 +113,49 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
               );
             },
           ),
-          const Positioned(
-            left: 20,
-            right: 20,
-            bottom: 40,
-            child: Card(
-              child: Padding(
-                padding: EdgeInsets.all(16),
-                child: Text(
-                  'Apunta la cámara hacia el código QR del equipo.',
-                  textAlign: TextAlign.center,
+
+          if (_procesando)
+            const Positioned.fill(
+              child: ColoredBox(
+                color: Color(0x99000000),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CircularProgressIndicator(
+                        color: Colors.white,
+                      ),
+                      SizedBox(height: 20),
+                      Text(
+                        'Consultando equipo...',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            )
+          else
+            const Positioned(
+              left: 20,
+              right: 20,
+              bottom: 40,
+              child: Card(
+                child: Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text(
+                    'Apunta la cámara hacia el código QR del equipo.',
+                    textAlign: TextAlign.center,
+                  ),
                 ),
               ),
             ),
-          ),
         ],
       ),
     );
   }
 }
+
