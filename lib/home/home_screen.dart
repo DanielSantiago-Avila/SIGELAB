@@ -6,6 +6,9 @@ import '../mantenimiento/mantenimiento_screen.dart';
 import 'dashboard_screen.dart';
 
 import '../qr/qr_scanner_screen.dart';
+import '../devoluciones/devolucion_screen.dart';
+
+import '../prestamos/prestamos_inicio_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final String nombreUsuario;
@@ -617,6 +620,14 @@ class _HomeScreenState extends State<HomeScreen> {
       case 2:
         // Pantalla de laboratorios existente.
         return const LaboratoriosScreen();
+
+      case 5:
+        // Pantalla principal del módulo de préstamos.
+        return const PrestamosInicioScreen();
+
+      case 6:
+        // Módulo de devoluciones.
+        return const DevolucionScreen();
 
       case 7:
         // Pantalla de mantenimiento integrada.

@@ -1,4 +1,3 @@
-
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
@@ -6,7 +5,9 @@ import 'qr_equipo_service.dart';
 import 'qr_resultado_screen.dart';
 
 class QrScannerScreen extends StatefulWidget {
-  const QrScannerScreen({super.key});
+  final bool modoSeleccion;
+
+  const QrScannerScreen({super.key, this.modoSeleccion = false});
 
   @override
   State<QrScannerScreen> createState() => _QrScannerScreenState();
@@ -49,11 +50,14 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
 
       if (!mounted) return;
 
+      if (widget.modoSeleccion) {
+        Navigator.pop(context, equipo);
+        return;
+      }
+
       await Navigator.push(
         context,
-        MaterialPageRoute(
-          builder: (_) => QrResultadoScreen(equipo: equipo),
-        ),
+        MaterialPageRoute(builder: (_) => QrResultadoScreen(equipo: equipo)),
       );
     } catch (error) {
       if (!mounted) return;
@@ -94,7 +98,9 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Escanear QR'),
+        title: Text(
+          widget.modoSeleccion ? 'Seleccionar equipo' : 'Escanear QR',
+        ),
       ),
       body: Stack(
         children: [
@@ -122,16 +128,11 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      CircularProgressIndicator(
-                        color: Colors.white,
-                      ),
+                      CircularProgressIndicator(color: Colors.white),
                       SizedBox(height: 20),
                       Text(
                         'Consultando equipo...',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                        ),
+                        style: TextStyle(color: Colors.white, fontSize: 18),
                       ),
                     ],
                   ),
@@ -139,15 +140,17 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
               ),
             )
           else
-            const Positioned(
+            Positioned(
               left: 20,
               right: 20,
               bottom: 40,
               child: Card(
                 child: Padding(
-                  padding: EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(16),
                   child: Text(
-                    'Apunta la cámara hacia el código QR del equipo.',
+                    widget.modoSeleccion
+                        ? 'Escanea el QR del equipo que deseas prestar.'
+                        : 'Apunta la cámara hacia el código QR del equipo.',
                     textAlign: TextAlign.center,
                   ),
                 ),
@@ -158,4 +161,3 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
     );
   }
 }
-

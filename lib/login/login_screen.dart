@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
+
 import 'auth_service.dart';
 import 'registro_screen.dart';
 import '../home/home_screen.dart';
+
+import 'dart:convert';
+
+import '../sesion/sesion_usuario.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -37,15 +42,91 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     setState(() => _cargando = true);
-    Map<String, dynamic> res = await _authService.iniciarSesion(usuario, password);
+    Map<String, dynamic> res = await _authService.iniciarSesion(
+      usuario,
+      password,
+    );
+
+    debugPrint('LOGIN RESPUESTA: $res');
+    debugPrint('LOGIN DATOS: ${res['datos']}');
+
+    debugPrint('LOGIN - Campos recibidos: ${res.keys.toList()}');
+    final datosLogin = res['datos'];
+    if (datosLogin is String) {
+      try {
+        final datosDecodificados = jsonDecode(datosLogin);
+
+        debugPrint(
+          'LOGIN - Tipo decodificado: ${datosDecodificados.runtimeType}',
+        );
+
+        if (datosDecodificados is Map) {
+          debugPrint(
+            'LOGIN - Campos internos: ${datosDecodificados.keys.toList()}',
+          );
+        } else if (datosDecodificados is List &&
+            datosDecodificados.isNotEmpty &&
+            datosDecodificados.first is Map) {
+          debugPrint(
+            'LOGIN - Campos internos: '
+            '${(datosDecodificados.first as Map).keys.toList()}',
+          );
+        }
+      } on FormatException {
+        debugPrint('LOGIN - datos no contiene JSON válido');
+      }
+    }
+
+    debugPrint('LOGIN - Tipo de datos: ${datosLogin.runtimeType}');
+
+    if (datosLogin is Map) {
+      debugPrint('LOGIN - Campos internos: ${datosLogin.keys.toList()}');
+    } else if (datosLogin is List && datosLogin.isNotEmpty) {
+      debugPrint(
+        'LOGIN - Tipo del primer elemento: ${datosLogin.first.runtimeType}',
+      );
+
+      if (datosLogin.first is Map) {
+        debugPrint(
+          'LOGIN - Campos internos: ${(datosLogin.first as Map).keys.toList()}',
+        );
+      }
+    }
+    debugPrint(
+      'LOGIN - Respuesta sin credenciales: '
+      'idUsuario=${res['idUsuario']}, '
+      'id_usuario=${res['id_usuario']}, '
+      'rol=${res['rol']}',
+    );
+
     setState(() => _cargando = false);
 
     if (!mounted) return;
 
     if (res['exito']) {
+      final dynamic datosRaw = res['datos'];
+
+      final Map<String, dynamic> datosLogin = datosRaw is String
+          ? Map<String, dynamic>.from(jsonDecode(datosRaw) as Map)
+          : Map<String, dynamic>.from(datosRaw as Map);
+
+      final int idUsuario = (datosLogin['id_usuario'] as num).toInt();
+
+      final String nombreCompleto =
+          '${datosLogin['nombre'] ?? ''} ${datosLogin['apellido'] ?? ''}'
+              .trim();
+
+      SesionUsuario.guardar(
+        id: idUsuario,
+        nombreUsuario: datosLogin['usuario']?.toString(),
+        nombreCompleto: nombreCompleto,
+      );
+
+      debugPrint('SESIÓN GUARDADA: ID ${SesionUsuario.idUsuario}');
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(res['mensaje'] ?? '¡Bienvenido!'), 
+          content: Text(res['mensaje'] ?? '¡Bienvenido!'),
           backgroundColor: Colors.green,
         ),
       );
@@ -55,21 +136,20 @@ class _LoginScreenState extends State<LoginScreen> {
         context,
         MaterialPageRoute(builder: (context) => const HomeScreen()),
       );
-// REDIRIGIR A LA PANTALLA DE INICIO (HOME)
-Navigator.pushReplacement(
-  context,
-  MaterialPageRoute(builder: (context) => const HomeScreen()),
-);
-} else {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(res['mensaje'] ?? 'Error al iniciar sesión'),
-      backgroundColor: Colors.red,
-    ),
-  );
-}
-
-}
+      // REDIRIGIR A LA PANTALLA DE INICIO (HOME)
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const HomeScreen()),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(res['mensaje'] ?? 'Error al iniciar sesión'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -81,8 +161,12 @@ Navigator.pushReplacement(
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
               child: Card(
-                elevation: Theme.of(context).brightness == Brightness.dark ? 2 : 4,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                elevation: Theme.of(context).brightness == Brightness.dark
+                    ? 2
+                    : 4,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                ),
                 child: Padding(
                   padding: const EdgeInsets.all(28.0),
                   child: Column(
@@ -93,7 +177,10 @@ Navigator.pushReplacement(
                       const SizedBox(height: 12),
                       const Text(
                         'SIGELAB',
-                        style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       const SizedBox(height: 28),
                       TextField(
@@ -102,7 +189,9 @@ Navigator.pushReplacement(
                         decoration: const InputDecoration(
                           labelText: 'Usuario',
                           prefixIcon: Icon(Icons.person),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(10)),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -115,10 +204,18 @@ Navigator.pushReplacement(
                           labelText: 'Contraseña',
                           prefixIcon: const Icon(Icons.lock),
                           suffixIcon: IconButton(
-                            icon: Icon(_ocultarPassword ? Icons.visibility : Icons.visibility_off),
-                            onPressed: () => setState(() => _ocultarPassword = !_ocultarPassword),
+                            icon: Icon(
+                              _ocultarPassword
+                                  ? Icons.visibility
+                                  : Icons.visibility_off,
+                            ),
+                            onPressed: () => setState(
+                              () => _ocultarPassword = !_ocultarPassword,
+                            ),
                           ),
-                          border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+                          border: const OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(10)),
+                          ),
                         ),
                       ),
                       const SizedBox(height: 24),
@@ -127,16 +224,24 @@ Navigator.pushReplacement(
                         height: 48,
                         child: ElevatedButton(
                           style: ElevatedButton.styleFrom(
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                            ),
                           ),
                           onPressed: _cargando ? null : _hacerLogin,
                           child: _cargando
                               ? const SizedBox(
-                                  width: 20, 
-                                  height: 20, 
-                                  child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
                                 )
-                              : const Text('Iniciar Sesión', style: TextStyle(fontSize: 16)),
+                              : const Text(
+                                  'Iniciar Sesión',
+                                  style: TextStyle(fontSize: 16),
+                                ),
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -144,10 +249,14 @@ Navigator.pushReplacement(
                         onPressed: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(builder: (context) => const RegistroScreen()),
+                            MaterialPageRoute(
+                              builder: (context) => const RegistroScreen(),
+                            ),
                           );
                         },
-                        child: const Text('¿Es tu primera vez aquí? Regístrate'),
+                        child: const Text(
+                          '¿Es tu primera vez aquí? Regístrate',
+                        ),
                       ),
                     ],
                   ),
