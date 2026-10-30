@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:sigelab/login/login_screen.dart';
 import 'package:sigelab/reconocimiento_facial/facial_recognition_screen.dart';
 import 'package:sigelab/home/home_screen.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 void main() {
   HttpOverrides.global = MyHttpOverrides();
@@ -40,6 +41,20 @@ class MyApp extends StatelessWidget {
         '/home': (context) => const HomeScreen(),
         
       },
+
+      locale: const Locale('es', 'GT'),
+      supportedLocales: const [
+        Locale('es', 'GT'),
+        Locale('es'),
+        Locale('en', 'US'),
+      ],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+
+      home: const LoginScreen(),
     );
   }
 }

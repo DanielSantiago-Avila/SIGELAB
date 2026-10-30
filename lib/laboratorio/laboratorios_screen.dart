@@ -208,50 +208,77 @@ class _LaboratoriosScreenState extends State<LaboratoriosScreen> {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: _boxStyle(),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
+
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text('Búsqueda por nombre de laboratorio', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
-                      const SizedBox(height: 6),
-                      TextField(
-                        controller: _busquedaController,
-                        decoration: InputDecoration(
-                          hintText: 'Ej. DEMO26-LAB-RED',
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                      ),
-                    ],
+                const Text(
+                  'Búsqueda por nombre de laboratorio',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 13,
                   ),
                 ),
-                const SizedBox(width: 16),
-                Row(
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _busquedaController,
+                  decoration: InputDecoration(
+                    hintText: 'Ej. DEM026-LAB-RED',
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 10,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
                   children: [
                     ElevatedButton(
                       style: _btnStyle(primaryDark),
                       onPressed: _limpiarFormulario,
-                      child: const Text('Agregar', style: TextStyle(color: Colors.white)),
+                      child: const Text(
+                        'Agregar',
+                        style: TextStyle(color: Colors.white),
+                      ),
                     ),
-                    const SizedBox(width: 8),
                     ElevatedButton(
-                      style: _btnStyle(_laboratorioSeleccionado != null ? primaryDark : Colors.grey),
-                      onPressed: _laboratorioSeleccionado != null ? _guardarONuevo : null,
-                      child: const Text('Modificar', style: TextStyle(color: Colors.white)),
+                      style: _btnStyle(
+                        _laboratorioSeleccionado != null
+                            ? primaryDark
+                            : Colors.grey,
+                      ),
+                      onPressed: _laboratorioSeleccionado != null
+                          ? _guardarONuevo
+                          : null,
+                      child: const Text(
+                        'Modificar',
+                        style: TextStyle(color: Colors.white),
+                      ),
                     ),
-                    const SizedBox(width: 8),
                     ElevatedButton(
-                      style: _btnStyle(_laboratorioSeleccionado != null ? primaryDark : Colors.grey),
-                      onPressed: _laboratorioSeleccionado != null ? _cambiarEstado : null,
-                      child: const Text('Cambiar estado', style: TextStyle(color: Colors.white)),
+                      style: _btnStyle(
+                        _laboratorioSeleccionado != null
+                            ? primaryDark
+                            : Colors.grey,
+                      ),
+                      onPressed: _laboratorioSeleccionado != null
+                          ? _cambiarEstado
+                          : null,
+                      child: const Text(
+                        'Cambiar estado',
+                        style: TextStyle(color: Colors.white),
+                      ),
                     ),
                   ],
-                )
+                ),
               ],
             ),
+
           ),
 
           const SizedBox(height: 24),

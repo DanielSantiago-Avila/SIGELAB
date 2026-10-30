@@ -60,16 +60,21 @@ class _LoginScreenState extends State<LoginScreen> {
           'esRegistro': false, // false para validar rostro, true si es usuario nuevo
         },
       );
+// REDIRIGIR A LA PANTALLA DE INICIO (HOME)
+Navigator.pushReplacement(
+  context,
+  MaterialPageRoute(builder: (context) => const HomeScreen()),
+);
+} else {
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(res['mensaje'] ?? 'Error al iniciar sesión'),
+      backgroundColor: Colors.red,
+    ),
+  );
+}
 
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(res['mensaje'] ?? 'Error al iniciar sesión'), 
-          backgroundColor: Colors.red,
-        ),
-      );
-    }
-  }
+}
 
   @override
   Widget build(BuildContext context) {
