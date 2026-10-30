@@ -5,6 +5,8 @@ import '../login/login_screen.dart';
 import '../mantenimiento/mantenimiento_screen.dart';
 import 'dashboard_screen.dart';
 
+import '../qr/qr_scanner_screen.dart';
+
 class HomeScreen extends StatefulWidget {
   final String nombreUsuario;
   final String rol;
@@ -47,6 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _MenuEntry(index: 7, icon: Icons.build_outlined, title: 'Mantenimiento'),
     _MenuEntry(index: 8, icon: Icons.bar_chart_outlined, title: 'Reportes'),
     _MenuEntry(index: 9, icon: Icons.fact_check_outlined, title: 'Auditoría'),
+    _MenuEntry(index: 10, icon: Icons.qr_code_scanner, title: 'Escanear QR'),
   ];
 
   // Genera las iniciales a partir del nombre del usuario.
@@ -618,6 +621,10 @@ class _HomeScreenState extends State<HomeScreen> {
       case 7:
         // Pantalla de mantenimiento integrada.
         return const MantenimientoScreen();
+
+      case 10:
+        // Pantalla para escanear códigos QR.
+        return const QrScannerScreen();
 
       default:
         // Los demás módulos conservan su opción en el menú,
