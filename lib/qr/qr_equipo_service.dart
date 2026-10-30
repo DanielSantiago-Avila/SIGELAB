@@ -1,4 +1,3 @@
-
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
@@ -18,9 +17,7 @@ class QrEquipoService {
     );
 
     try {
-      final response = await http.get(uri).timeout(
-        const Duration(seconds: 15),
-      );
+      final response = await http.get(uri).timeout(const Duration(seconds: 15));
 
       if (response.statusCode == 200) {
         final datos = jsonDecode(utf8.decode(response.bodyBytes));
@@ -34,12 +31,14 @@ class QrEquipoService {
 
       if (response.statusCode == 404) {
         throw Exception(
-          'No se encontró ningún equipo asociado al código $codigo.',
+          'No se encontró ningún equipo asociado '
+          'al código $codigo.',
         );
       }
 
       throw Exception(
-        'Error al consultar el equipo (HTTP ${response.statusCode}).',
+        'Error al consultar el equipo '
+        '(HTTP ${response.statusCode}).',
       );
     } catch (e) {
       if (e is Exception) {

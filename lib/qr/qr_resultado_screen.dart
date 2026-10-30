@@ -1,35 +1,25 @@
-
 import 'package:flutter/material.dart';
+
+import '../prestamos/prestamo_screen.dart';
 
 class QrResultadoScreen extends StatelessWidget {
   final Map<String, dynamic> equipo;
 
-  const QrResultadoScreen({
-    super.key,
-    required this.equipo,
-  });
+  const QrResultadoScreen({super.key, required this.equipo});
 
   @override
   Widget build(BuildContext context) {
-    final estado = (equipo['estado'] ?? 'DESCONOCIDO')
-        .toString()
-        .toUpperCase();
+    final estado = (equipo['estado'] ?? 'DESCONOCIDO').toString().toUpperCase();
 
     final disponible = estado == 'DISPONIBLE';
     final activo = equipo['activo'] == true;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Información del equipo'),
-      ),
+      appBar: AppBar(title: const Text('Información del equipo')),
       body: ListView(
         padding: const EdgeInsets.all(20),
         children: [
-          const Icon(
-            Icons.devices,
-            size: 75,
-            color: Colors.blue,
-          ),
+          const Icon(Icons.devices, size: 75, color: Colors.blue),
           const SizedBox(height: 16),
 
           Text(
@@ -54,30 +44,12 @@ class QrResultadoScreen extends StatelessWidget {
           Card(
             child: Column(
               children: [
-                _dato(
-                  'Código de inventario',
-                  equipo['codigoInventario'],
-                ),
-                _dato(
-                  'Código QR',
-                  equipo['codigoQR'],
-                ),
-                _dato(
-                  'Número de serie',
-                  equipo['numeroSerie'],
-                ),
-                _dato(
-                  'Laboratorio',
-                  equipo['laboratorio'],
-                ),
-                _dato(
-                  'Estado',
-                  equipo['estado'],
-                ),
-                _dato(
-                  'Observaciones',
-                  equipo['observaciones'],
-                ),
+                _dato('Código de inventario', equipo['codigoInventario']),
+                _dato('Código QR', equipo['codigoQR']),
+                _dato('Número de serie', equipo['numeroSerie']),
+                _dato('Laboratorio', equipo['laboratorio']),
+                _dato('Estado', equipo['estado']),
+                _dato('Observaciones', equipo['observaciones']),
               ],
             ),
           ),
@@ -92,11 +64,10 @@ class QrResultadoScreen extends StatelessWidget {
           else if (disponible)
             FilledButton.icon(
               onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      'Próximamente: registrar préstamo.',
-                    ),
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => PrestamoScreen(equipo: equipo),
                   ),
                 );
               },
@@ -108,9 +79,7 @@ class QrResultadoScreen extends StatelessWidget {
               onPressed: () {
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(
-                    content: Text(
-                      'Próximamente: consultar devolución.',
-                    ),
+                    content: Text('Próximamente: consultar devolución.'),
                   ),
                 );
               },
@@ -133,9 +102,7 @@ class QrResultadoScreen extends StatelessWidget {
   Widget _dato(String titulo, dynamic valor) {
     return ListTile(
       title: Text(titulo),
-      subtitle: Text(
-        valor?.toString() ?? 'No disponible',
-      ),
+      subtitle: Text(valor?.toString() ?? 'No disponible'),
     );
   }
 }
