@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
-import 'login/login_screen.dart';
+import 'package:sigelab/login/login_screen.dart';
+import 'package:sigelab/reconocimiento_facial/facial_recognition_screen.dart';
+import 'package:sigelab/home/home_screen.dart';
 
 void main() {
   HttpOverrides.global = MyHttpOverrides();
@@ -15,17 +17,38 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'SIGELAB',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(primarySwatch: Colors.blue),
-      home: const LoginScreen(),
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+      initialRoute: '/', // Inicia en el Login
+      routes: {
+        '/': (context) => const LoginScreen(),
+
+        '/reconocimiento': (context) {
+          // Lee los argumentos enviados desde el Login (si los hay)
+          final args = ModalRoute.of(context)?.settings.arguments as Map<String, dynamic>?;
+
+          return FacialRecognitionScreen(
+            idUsuario: args?['idUsuario'] ?? 1,
+            esRegistro: args?['esRegistro'] ?? false,
+            onSuccess: () {
+              // AL VALIDAR EL ROSTRO CON ÉXITO: navega al menú principal
+              Navigator.pushReplacementNamed(context, '/home');
+            },
+          );
+        },
+        '/home': (context) => const HomeScreen(),
+        
+      },
     );
   }
 }
 
-// ESTA ES LA CLASE QUE FALTABA AL FINAL:
 class MyHttpOverrides extends HttpOverrides {
   @override
   HttpClient createHttpClient(SecurityContext? context) {
     return super.createHttpClient(context)
-      ..badCertificateCallback = (X509Certificate cert, String host, int port) => true;
+      ..badCertificateCallback =
+          (X509Certificate cert, String host, int port) => true;
   }
 }

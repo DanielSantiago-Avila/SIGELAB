@@ -50,10 +50,15 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
 
-      // REDIRIGIR A LA PANTALLA DE INICIO (HOME)
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
+      // AL VALIDAR EL USUARIO Y CONTRASEÑA CORRECTAMENTE:
+
+      Navigator.pushReplacementNamed(
+        context, 
+        '/reconocimiento',
+        arguments: {
+          'idUsuario': 1, // Aquí pasas el ID del usuario que inició sesión
+          'esRegistro': false, // false para validar rostro, true si es usuario nuevo
+        },
       );
 
     } else {
