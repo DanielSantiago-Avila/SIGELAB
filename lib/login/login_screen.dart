@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 
 import 'auth_service.dart';
 import 'registro_screen.dart';
-import '../home/welcome_screen.dart';
 
 import 'dart:convert';
 
@@ -42,68 +41,17 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     setState(() => _cargando = true);
-    Map<String, dynamic> res = await _authService.iniciarSesion(
+
+    final Map<String, dynamic> res = await _authService.iniciarSesion(
       usuario,
       password,
     );
 
-    debugPrint('LOGIN RESPUESTA: $res');
-    debugPrint('LOGIN DATOS: ${res['datos']}');
-
-    debugPrint('LOGIN - Campos recibidos: ${res.keys.toList()}');
-    final datosLogin = res['datos'];
-    if (datosLogin is String) {
-      try {
-        final datosDecodificados = jsonDecode(datosLogin);
-
-        debugPrint(
-          'LOGIN - Tipo decodificado: ${datosDecodificados.runtimeType}',
-        );
-
-        if (datosDecodificados is Map) {
-          debugPrint(
-            'LOGIN - Campos internos: ${datosDecodificados.keys.toList()}',
-          );
-        } else if (datosDecodificados is List &&
-            datosDecodificados.isNotEmpty &&
-            datosDecodificados.first is Map) {
-          debugPrint(
-            'LOGIN - Campos internos: '
-            '${(datosDecodificados.first as Map).keys.toList()}',
-          );
-        }
-      } on FormatException {
-        debugPrint('LOGIN - datos no contiene JSON válido');
-      }
-    }
-
-    debugPrint('LOGIN - Tipo de datos: ${datosLogin.runtimeType}');
-
-    if (datosLogin is Map) {
-      debugPrint('LOGIN - Campos internos: ${datosLogin.keys.toList()}');
-    } else if (datosLogin is List && datosLogin.isNotEmpty) {
-      debugPrint(
-        'LOGIN - Tipo del primer elemento: ${datosLogin.first.runtimeType}',
-      );
-
-      if (datosLogin.first is Map) {
-        debugPrint(
-          'LOGIN - Campos internos: ${(datosLogin.first as Map).keys.toList()}',
-        );
-      }
-    }
-    debugPrint(
-      'LOGIN - Respuesta sin credenciales: '
-      'idUsuario=${res['idUsuario']}, '
-      'id_usuario=${res['id_usuario']}, '
-      'rol=${res['rol']}',
-    );
+    if (!mounted) return;
 
     setState(() => _cargando = false);
 
-    if (!mounted) return;
-
-    if (res['exito']) {
+    if (res['exito'] == true) {
       final dynamic datosRaw = res['datos'];
 
       final Map<String, dynamic> datosLogin = datosRaw is String
@@ -122,19 +70,19 @@ class _LoginScreenState extends State<LoginScreen> {
         nombreCompleto: nombreCompleto,
       );
 
-      debugPrint('SESIÓN GUARDADA: ID ${SesionUsuario.idUsuario}');
+      if (!mounted) return;
 
+      Navigator.pushReplacementNamed(
+        context,
+        '/reconocimiento',
+        arguments: {'idUsuario': idUsuario, 'esRegistro': false},
+      );
+    } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(res['mensaje'] ?? '¡Bienvenido!'),
-          backgroundColor: Colors.green,
+          content: Text(res['mensaje'] ?? 'Error al iniciar sesión'),
+          backgroundColor: Colors.red,
         ),
-      );
-
-      // REDIRIGIR A LA PANTALLA DE BIENVENIDA
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const WelcomeScreen()),
       );
     }
   }

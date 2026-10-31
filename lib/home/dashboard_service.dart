@@ -137,7 +137,7 @@ class DashboardResumen {
 
 /// Servicio encargado de consultar la información del Dashboard.
 class DashboardService {
-  static const String _baseUrl = 'http://18.119.123.181';
+  static const String _baseUrl = 'https://sigelab-api.duckdns.org';
 
   Future<DashboardResumen> obtenerResumen() async {
     final resultados = await Future.wait<List<Map<String, dynamic>>>([

@@ -46,15 +46,40 @@ class _RegistroScreenState extends State<RegistroScreen> {
       password: _passwordController.text.trim(),
     );
 
+    if (!mounted) return;
     setState(() => _cargando = false);
 
-    if (!mounted) return;
+    if (res['exito'] == true) {
+      final idUsuario = AuthService.idUsuarioDesdeRespuesta(res);
+      if (idUsuario == null) {
+        await showDialog<void>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: const Text('Cuenta creada'),
+            content: const Text(
+              'El servidor no devolvió el ID del usuario. No se puede asociar '
+              'el rostro a esta cuenta; revisa la respuesta del endpoint de registro.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('Entendido'),
+              ),
+            ],
+          ),
+        );
+        if (mounted) Navigator.pop(context);
+        return;
+      }
 
-    if (res['exito']) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(res['mensaje']), backgroundColor: Colors.green),
+      Navigator.pushReplacementNamed(
+        context,
+        '/reconocimiento',
+        arguments: {
+          'idUsuario': idUsuario,
+          'esRegistro': true,
+        },
       );
-      Navigator.pop(context);
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(res['mensaje']), backgroundColor: Colors.red),
