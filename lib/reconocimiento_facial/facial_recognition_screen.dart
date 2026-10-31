@@ -1,8 +1,9 @@
-import 'dart:convert';
-import 'dart:typed_data';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
-import 'facial_recognition_service.dart';
+
+import 'biometria_service.dart';
 
 class FacialRecognitionScreen extends StatefulWidget {
   final int idUsuario;
@@ -10,14 +11,15 @@ class FacialRecognitionScreen extends StatefulWidget {
   final VoidCallback onSuccess;
 
   const FacialRecognitionScreen({
-    Key? key,
+    super.key,
     required this.idUsuario,
     this.esRegistro = false,
     required this.onSuccess,
-  }) : super(key: key);
+  });
 
   @override
-  State<FacialRecognitionScreen> createState() => _FacialRecognitionScreenState();
+  State<FacialRecognitionScreen> createState() =>
+      _FacialRecognitionScreenState();
 }
 
 class _FacialRecognitionScreenState extends State<FacialRecognitionScreen> {
@@ -25,9 +27,8 @@ class _FacialRecognitionScreenState extends State<FacialRecognitionScreen> {
   List<CameraDescription>? _cameras;
   bool _isCameraInitialized = false;
   bool _cargando = false;
-  final FacialRecognitionService _service =
-      FacialRecognitionService(baseUrl: 'https://tu-backend-api.com');
-
+  String? _cameraError;
+  final BiometriaService _biometriaService = BiometriaService();
   @override
   void initState() {
     super.initState();
@@ -52,110 +53,140 @@ class _FacialRecognitionScreenState extends State<FacialRecognitionScreen> {
 
         await _controller!.initialize();
         if (!mounted) return;
-        setState(() => _isCameraInitialized = true);
+        setState(() {
+          _cameraError = null;
+          _isCameraInitialized = true;
+        });
+      } else {
+        throw StateError('No se encontraron cámaras disponibles.');
       }
     } catch (e) {
-      debugPrint('Error al inicializar cámara: $e');
+      if (!mounted) return;
+      setState(() {
+        _cameraError = 'No se pudo iniciar la cámara: $e';
+        _isCameraInitialized = false;
+      });
     }
   }
 
   Future<void> _procesarRostro() async {
-    if (_controller == null || !_controller!.value.isInitialized || _cargando) return;
+    if (_controller == null || !_controller!.value.isInitialized || _cargando) {
+      return;
+    }
 
     setState(() => _cargando = true);
 
     try {
-      // Captura el frame en tiempo real
-      final XFile photo = await _controller!.takePicture();
-      final Uint8List bytes = await photo.readAsBytes();
-      final String base64Image = base64Encode(bytes);
-
-      bool resultado = false;
-
-      if (widget.esRegistro) {
-        // Guarda la biometría inicial del usuario en BIOMETRIA_USUARIO
-        resultado = await _service.registrarRostro(
-          idUsuario: widget.idUsuario,
-          imagenBase64: base64Image,
-        );
-      } else {
-        // Valida el rostro capturado contra el vector guardado
-        resultado = await _service.validarRostro(
-          idUsuario: widget.idUsuario,
-          imagenBase64: base64Image,
-        );
+      if (_controller!.value.isStreamingImages) {
+        await _controller!.stopImageStream();
       }
 
+      final XFile photo = await _controller!.takePicture();
+      final imagenFile = File(photo.path);
+      Map<String, dynamic> respuesta;
+      var fueRegistro = widget.esRegistro;
+
+      if (widget.esRegistro) {
+        respuesta = await _biometriaService.registrarBiometria(
+          imagenFile: imagenFile,
+          idUsuario: widget.idUsuario,
+        );
+      } else {
+        respuesta = await _biometriaService.validarBiometria(
+          imagenFile: imagenFile,
+          idUsuario: widget.idUsuario,
+        );
+
+        if (respuesta['requiere_registro'] == true && mounted) {
+          final registrar =
+              await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Rostro sin registrar'),
+                  content: Text(
+                    '${respuesta['mensaje'] ?? 'No hay un rostro asociado a esta cuenta.'} '
+                    '¿Quieres registrar ahora la foto capturada?',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Ahora no'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text('Registrar rostro'),
+                    ),
+                  ],
+                ),
+              ) ??
+              false;
+
+          if (!mounted) return;
+          if (registrar) {
+            fueRegistro = true;
+            respuesta = await _biometriaService.registrarBiometria(
+              imagenFile: imagenFile,
+              idUsuario: widget.idUsuario,
+            );
+          }
+        }
+      }
+
+      final resultado =
+          respuesta['exito'] == true &&
+          (fueRegistro || respuesta['es_valido'] == true);
+
+      if (!mounted) return;
       setState(() => _cargando = false);
 
       if (resultado) {
-        if (!mounted) return;
-
-        // Muestra diálogo flotante de éxito
         await showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              title: Column(
-                children: const [
-                  Icon(Icons.check_circle_outline, color: Colors.green, size: 60),
-                  SizedBox(height: 10),
-                  Text(
-                    '¡Validación Exitosa!',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+          builder: (context) => AlertDialog(
+            title: const Text('Éxito', textAlign: TextAlign.center),
+            content: Text(
+              fueRegistro
+                  ? 'Su rostro ha sido registrado correctamente en el sistema.'
+                  : 'Rostro reconocido con éxito. ¡Bienvenido al sistema!',
+              textAlign: TextAlign.center,
+            ),
+            actions: [
+              Center(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
                   ),
-                ],
-              ),
-              content: Text(
-                widget.esRegistro
-                    ? 'Su rostro ha sido registrado correctamente en el sistema.'
-                    : 'Rostro reconocido con éxito. ¡Bienvenido al sistema!',
-                textAlign: TextAlign.center,
-              ),
-              actions: [
-                Center(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    onPressed: () {
-                      Navigator.of(context).pop(); // Cierra el modal
-                    },
-                    child: const Text('Continuar al Home'),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    widget.onSuccess();
+                  },
+                  child: const Text(
+                    'Continuar al Home',
+                    style: TextStyle(color: Colors.white),
                   ),
                 ),
-              ],
-            );
-          },
+              ),
+            ],
+          ),
         );
-
-        // Avanza al Home al cerrar la ventana
-        widget.onSuccess();
       } else {
-        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              widget.esRegistro
-                  ? 'Error al registrar biometría.'
-                  : 'Reconocimiento facial no coincide. Acceso denegado.',
+              respuesta['mensaje']?.toString() ??
+                  (fueRegistro
+                      ? 'El servidor no confirmó el registro biométrico.'
+                      : 'Reconocimiento facial no coincide. Acceso denegado.'),
             ),
           ),
         );
       }
     } catch (e) {
-      setState(() => _cargando = false);
       if (!mounted) return;
+      setState(() => _cargando = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error en el escaneo: $e')),
+        SnackBar(content: Text('Error al procesar la solicitud facial: $e')),
       );
     }
   }
@@ -170,7 +201,9 @@ class _FacialRecognitionScreenState extends State<FacialRecognitionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.esRegistro ? 'Registro Biométrico' : 'Validación Biométrica'),
+        title: Text(
+          widget.esRegistro ? 'Registro Biométrico' : 'Validación Biométrica',
+        ),
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -181,11 +214,14 @@ class _FacialRecognitionScreenState extends State<FacialRecognitionScreen> {
                 widget.esRegistro
                     ? 'Posicione su rostro frente a la cámara para registrarlo'
                     : 'Alinee su rostro en el recuadro para validar su ingreso',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 20),
-              
+
               // Círculo/Recuadro con el preview de la cámara en vivo
               Container(
                 width: 280,
@@ -197,7 +233,24 @@ class _FacialRecognitionScreenState extends State<FacialRecognitionScreen> {
                 clipBehavior: Clip.hardEdge,
                 child: _isCameraInitialized
                     ? CameraPreview(_controller!)
-                    : const Center(child: CircularProgressIndicator()),
+                    : _cameraError == null
+                    ? const Center(child: CircularProgressIndicator())
+                    : Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(_cameraError!, textAlign: TextAlign.center),
+                              const SizedBox(height: 12),
+                              ElevatedButton(
+                                onPressed: _initCamera,
+                                child: const Text('Reintentar'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
               ),
               const SizedBox(height: 30),
 
@@ -207,10 +260,15 @@ class _FacialRecognitionScreenState extends State<FacialRecognitionScreen> {
                       onPressed: _isCameraInitialized ? _procesarRostro : null,
                       icon: const Icon(Icons.face),
                       label: Text(
-                        widget.esRegistro ? 'Guardar Biometría' : 'Validar Identidad',
+                        widget.esRegistro
+                            ? 'Guardar Biometría'
+                            : 'Validar Identidad',
                       ),
                       style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
                       ),
                     ),
             ],

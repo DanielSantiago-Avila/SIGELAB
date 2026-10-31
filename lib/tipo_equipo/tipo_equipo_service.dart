@@ -8,7 +8,9 @@ class TipoEquipoService {
   // 1. Listar todos los tipos de equipo
 
   Future<List<TipoEquipo>> listar() async {
-    final url = Uri.parse('http://18.119.123.181/api/TipoEquipo/listar');
+    final url = Uri.parse(
+      'https://sigelab-api.duckdns.org/api/TipoEquipo/listar',
+    );
 
     final response = await http
         .get(url, headers: {'Accept': 'application/json'})
@@ -45,7 +47,7 @@ class TipoEquipoService {
   // 2. Obtener un tipo de equipo por su ID
   Future<TipoEquipo> obtenerPorId(int idTipoEquipo) async {
     final url = Uri.parse(
-      'http://18.119.123.181/api/TipoEquipo/obtener/$idTipoEquipo',
+      'https://sigelab-api.duckdns.org/api/TipoEquipo/obtener/$idTipoEquipo',
     );
 
     final response = await http
@@ -79,7 +81,7 @@ class TipoEquipoService {
   // 3. Listar solamente los tipos activos desde AWS
   Future<List<TipoEquipo>> listarActivos() async {
     final url = Uri.parse(
-      'http://18.119.123.181/api/TipoEquipo/listar-activos-combo',
+      'https://sigelab-api.duckdns.org/api/TipoEquipo/listar-activos-combo',
     );
 
     final response = await http
@@ -132,7 +134,9 @@ class TipoEquipoService {
       throw Exception('El cÃ³digo y nombre son obligatorios.');
     }
 
-    final url = Uri.parse('http://18.119.123.181/api/TipoEquipo/crear');
+    final url = Uri.parse(
+      'https://sigelab-api.duckdns.org/api/TipoEquipo/crear',
+    );
 
     final datos = {
       'usuarioAccionante': {'idUsuario': idUsuarioAccionante},
@@ -208,7 +212,9 @@ class TipoEquipoService {
       throw Exception('El cÃ³digo y nombre son obligatorios.');
     }
 
-    final url = Uri.parse('http://18.119.123.181/api/TipoEquipo/actualizar');
+    final url = Uri.parse(
+      'https://sigelab-api.duckdns.org/api/TipoEquipo/actualizar',
+    );
 
     final datos = {
       'usuarioAccionante': {'idUsuario': idUsuarioAccionante},
@@ -269,7 +275,9 @@ class TipoEquipoService {
     int idTipoEquipo, {
     required int idUsuarioAccionante,
   }) async {
-    final url = Uri.parse('http://18.119.123.181/api/TipoEquipo/desactivar');
+    final url = Uri.parse(
+      'https://sigelab-api.duckdns.org/api/TipoEquipo/desactivar',
+    );
 
     final datos = {
       'usuarioAccionante': {'idUsuario': idUsuarioAccionante},
@@ -319,7 +327,9 @@ class TipoEquipoService {
     int idTipoEquipo, {
     required int idUsuarioAccionante,
   }) async {
-    final url = Uri.parse('http://18.119.123.181/api/TipoEquipo/activar');
+    final url = Uri.parse(
+      'https://sigelab-api.duckdns.org/api/TipoEquipo/activar',
+    );
 
     final datos = {
       'usuarioAccionante': {'idUsuario': idUsuarioAccionante},
@@ -364,4 +374,3 @@ class TipoEquipoService {
     }
   }
 }
-

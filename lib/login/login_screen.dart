@@ -29,10 +29,17 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  // INICIAR SESIÓN Y ACCEDER DIRECTAMENTE AL MENÚ PRINCIPAL
+  // ============================================================
+  // INICIAR SESIÓN Y ACCEDER AL RECONOCIMIENTO FACIAL
+  // ============================================================
+
   Future<void> _hacerLogin() async {
     final usuario = _usuarioController.text.trim();
     final password = _passwordController.text.trim();
+
+    // ==========================================================
+    // VALIDAR CAMPOS
+    // ==========================================================
 
     if (usuario.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -48,6 +55,10 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     Map<String, dynamic> respuesta;
+
+    // ==========================================================
+    // ENVIAR CREDENCIALES A LA API
+    // ==========================================================
 
     try {
       respuesta = await _authService.iniciarSesion(
@@ -67,6 +78,7 @@ class _LoginScreenState extends State<LoginScreen> {
           backgroundColor: Colors.red,
         ),
       );
+
       return;
     }
 
@@ -76,34 +88,48 @@ class _LoginScreenState extends State<LoginScreen> {
       _cargando = false;
     });
 
+    // ==========================================================
     // COMPROBAR RESPUESTA DEL LOGIN
+    // ==========================================================
+
     if (respuesta['exito'] != true) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            respuesta['mensaje'] ?? 'Error al iniciar sesión',
+            respuesta['mensaje']?.toString() ??
+                'Error al iniciar sesión',
           ),
           backgroundColor: Colors.red,
         ),
       );
+
       return;
     }
 
+    // ==========================================================
     // PROCESAR LOS DATOS DEL USUARIO
+    // ==========================================================
+
     final datosRaw = respuesta['datos'];
 
     Map<String, dynamic> datosLogin;
 
     try {
       if (datosRaw is String) {
-        datosLogin = Map<String, dynamic>.from(
-          jsonDecode(datosRaw) as Map,
-        );
+        final decoded = jsonDecode(datosRaw);
+
+        if (decoded is! Map) {
+          throw const FormatException(
+            'Los datos del usuario no tienen un formato válido.',
+          );
+        }
+
+        datosLogin = Map<String, dynamic>.from(decoded);
       } else if (datosRaw is Map) {
         datosLogin = Map<String, dynamic>.from(datosRaw);
       } else {
         throw const FormatException(
-          'Formato de datos de usuario inválido.',
+          'No se recibieron los datos del usuario.',
         );
       }
     } catch (e) {
@@ -115,14 +141,20 @@ class _LoginScreenState extends State<LoginScreen> {
           backgroundColor: Colors.red,
         ),
       );
+
       return;
     }
 
-    // OBTENER ID DEL USUARIO
+    // ==========================================================
+    // OBTENER Y VALIDAR ID DEL USUARIO
+    // ==========================================================
+
     final idRaw = datosLogin['id_usuario'] ??
         datosLogin['idUsuario'];
 
-    final idUsuario = int.tryParse(idRaw?.toString() ?? '');
+    final idUsuario = idRaw is num
+        ? idRaw.toInt()
+        : int.tryParse(idRaw?.toString() ?? '');
 
     if (idUsuario == null || idUsuario <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -133,10 +165,14 @@ class _LoginScreenState extends State<LoginScreen> {
           backgroundColor: Colors.red,
         ),
       );
+
       return;
     }
 
+    // ==========================================================
     // OBTENER INFORMACIÓN DEL USUARIO
+    // ==========================================================
+
     final nombre = datosLogin['nombre']?.toString() ?? '';
     final apellido = datosLogin['apellido']?.toString() ?? '';
 
@@ -145,7 +181,10 @@ class _LoginScreenState extends State<LoginScreen> {
     final nombreUsuario =
         datosLogin['usuario']?.toString() ?? nombreCompleto;
 
-    // GUARDAR SESIÓN
+    // ==========================================================
+    // GUARDAR SESIÓN DEL USUARIO
+    // ==========================================================
+
     SesionUsuario.guardar(
       id: idUsuario,
       nombreUsuario: nombreUsuario,
@@ -156,22 +195,25 @@ class _LoginScreenState extends State<LoginScreen> {
       'SESIÓN GUARDADA: ID ${SesionUsuario.idUsuario}',
     );
 
-    // ACCESO DIRECTO AL MENÚ PRINCIPAL
-    // RECONOCIMIENTO FACIAL DESACTIVADO TEMPORALMENTE
+    // ==========================================================
+    // ACCEDER AL RECONOCIMIENTO FACIAL
+    // ==========================================================
 
     if (!mounted) return;
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          respuesta['mensaje'] ?? '¡Bienvenido!',
-        ),
-        backgroundColor: Colors.green,
-      ),
+    Navigator.pushReplacementNamed(
+      context,
+      '/reconocimiento',
+      arguments: {
+        'idUsuario': idUsuario,
+        'esRegistro': false,
+      },
     );
-
-    Navigator.pushReplacementNamed(context, '/home');
   }
+
+  // ============================================================
+  // CONSTRUIR PANTALLA
+  // ============================================================
 
   @override
   Widget build(BuildContext context) {
@@ -206,7 +248,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         size: 70,
                         color: Colors.blue,
                       ),
+
                       const SizedBox(height: 12),
+
                       const Text(
                         'SIGELAB',
                         style: TextStyle(
@@ -214,9 +258,11 @@ class _LoginScreenState extends State<LoginScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+
                       const SizedBox(height: 28),
 
                       // USUARIO
+
                       TextField(
                         controller: _usuarioController,
                         textInputAction: TextInputAction.next,
@@ -234,6 +280,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 16),
 
                       // CONTRASEÑA
+
                       TextField(
                         controller: _passwordController,
                         obscureText: _ocultarPassword,
@@ -254,7 +301,8 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             onPressed: () {
                               setState(() {
-                                _ocultarPassword = !_ocultarPassword;
+                                _ocultarPassword =
+                                    !_ocultarPassword;
                               });
                             },
                           ),
@@ -269,6 +317,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 24),
 
                       // BOTÓN INICIAR SESIÓN
+
                       SizedBox(
                         width: double.infinity,
                         height: 48,
@@ -290,24 +339,29 @@ class _LoginScreenState extends State<LoginScreen> {
                                 )
                               : const Text(
                                   'Iniciar Sesión',
-                                  style: TextStyle(fontSize: 16),
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                  ),
                                 ),
                         ),
                       ),
 
                       const SizedBox(height: 16),
 
-                      // REGISTRO
+                      // REGISTRO DE USUARIO
+
                       TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) =>
-                                  const RegistroScreen(),
-                            ),
-                          );
-                        },
+                        onPressed: _cargando
+                            ? null
+                            : () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const RegistroScreen(),
+                                  ),
+                                );
+                              },
                         child: const Text(
                           '¿Es tu primera vez aquí? Regístrate',
                         ),

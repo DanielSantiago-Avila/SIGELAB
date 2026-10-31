@@ -1,3 +1,4 @@
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
@@ -7,10 +8,13 @@ import 'package:http/http.dart' as http;
 import 'laboratorio_model.dart';
 
 class LaboratorioService {
-  static const String _baseUrl =
-      'http://18.119.123.181/api/Laboratorio';
+  // ============================================================
+  // CONFIGURACIÓN DEL SERVICIO
+  // ============================================================
 
-  // Se amplía el tiempo de espera de 20 a 60 segundos.
+  static const String _baseUrl =
+      'https://sigelab-api.duckdns.org/api/Laboratorio';
+
   static const Duration _timeout = Duration(seconds: 60);
 
   // ============================================================
@@ -35,7 +39,10 @@ class LaboratorioService {
   // OBTENER MENSAJES DE ERROR
   // ============================================================
 
-  String _obtenerMensajeError(dynamic datos, String alternativo) {
+  String _obtenerMensajeError(
+    dynamic datos,
+    String alternativo,
+  ) {
     if (datos is Map) {
       const claves = [
         'mensaje',
@@ -169,7 +176,9 @@ class LaboratorioService {
   // CONSULTAR LABORATORIOS
   // ============================================================
 
-  Future<List<Laboratorio>> _consultarLista(String endpoint) async {
+  Future<List<Laboratorio>> _consultarLista(
+    String endpoint,
+  ) async {
     final uri = Uri.parse('$_baseUrl$endpoint');
 
     try {
