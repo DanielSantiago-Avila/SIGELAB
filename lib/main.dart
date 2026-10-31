@@ -1,7 +1,11 @@
-import 'package:flutter/material.dart';
 import 'dart:io';
-import 'login/login_screen.dart';
+
+import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
+
+import 'package:sigelab/login/login_screen.dart';
+import 'package:sigelab/reconocimiento_facial/facial_recognition_screen.dart';
+import 'package:sigelab/home/home_screen.dart';
 
 void main() {
   HttpOverrides.global = MyHttpOverrides();
@@ -16,30 +20,55 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'SIGELAB',
       debugShowCheckedModeBanner: false,
-      theme: ThemeData(primarySwatch: Colors.blue),
+
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+      ),
+
+      initialRoute: '/',
+
+      routes: {
+        '/': (context) => const LoginScreen(),
+
+        '/reconocimiento': (context) {
+          final args =
+              ModalRoute.of(context)?.settings.arguments
+                  as Map<String, dynamic>?;
+
+          return FacialRecognitionScreen(
+            idUsuario: args?['idUsuario'] ?? 1,
+            esRegistro: args?['esRegistro'] ?? false,
+            onSuccess: () {
+              Navigator.pushReplacementNamed(context, '/home');
+            },
+          );
+        },
+
+        '/home': (context) => const HomeScreen(),
+      },
 
       locale: const Locale('es', 'GT'),
+
       supportedLocales: const [
         Locale('es', 'GT'),
         Locale('es'),
         Locale('en', 'US'),
       ],
+
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,
         GlobalCupertinoLocalizations.delegate,
       ],
-
-      home: const LoginScreen(),
     );
   }
 }
 
-// ESTA ES LA CLASE QUE FALTABA AL FINAL:
 class MyHttpOverrides extends HttpOverrides {
   @override
   HttpClient createHttpClient(SecurityContext? context) {
     return super.createHttpClient(context)
-      ..badCertificateCallback = (X509Certificate cert, String host, int port) => true;
+      ..badCertificateCallback =
+          (X509Certificate cert, String host, int port) => true;
   }
 }
