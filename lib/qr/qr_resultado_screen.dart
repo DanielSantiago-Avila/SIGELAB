@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../prestamos/prestamo_screen.dart';
 
+import '../sesion/sesion_usuario.dart';
+
 class QrResultadoScreen extends StatelessWidget {
   final Map<String, dynamic> equipo;
 
@@ -64,10 +66,26 @@ class QrResultadoScreen extends StatelessWidget {
           else if (disponible)
             FilledButton.icon(
               onPressed: () {
+                final idUsuario = SesionUsuario.idUsuario;
+
+                if (idUsuario == null || idUsuario <= 0) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'No se encontró una sesión de usuario válida.',
+                      ),
+                    ),
+                  );
+                  return;
+                }
+
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => PrestamoScreen(equipo: equipo),
+                    builder: (context) => PrestamoScreen(
+                      equipo: equipo,
+                      idUsuarioAccionante: idUsuario,
+                    ),
                   ),
                 );
               },
