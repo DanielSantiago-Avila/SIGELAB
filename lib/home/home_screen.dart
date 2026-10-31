@@ -115,8 +115,6 @@ class _HomeScreenState extends State<HomeScreen> {
       icon: Icons.qr_code_scanner,
       title: 'Escanear QR',
     ),
-  ];
-
   // Genera las iniciales a partir del nombre del usuario.
   String _obtenerIniciales(String nombre) {
     final nombreLimpio = nombre.trim();
