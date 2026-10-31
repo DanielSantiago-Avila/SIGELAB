@@ -3,6 +3,8 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'facial_recognition_service.dart';
+import 'biometria_service.dart';
+import 'dart:io';
 
 class FacialRecognitionScreen extends StatefulWidget {
   final int idUsuario;
@@ -26,8 +28,10 @@ class _FacialRecognitionScreenState extends State<FacialRecognitionScreen> {
   bool _isCameraInitialized = false;
   bool _cargando = false;
   String? _cameraError;
+  
   final FacialRecognitionService _service =
       FacialRecognitionService(baseUrl: 'http://18.119.123.181', usarSimulacion: false);
+  final BiometriaService _biometriaService = BiometriaService();
 
   @override
   void initState() {
@@ -79,25 +83,35 @@ class _FacialRecognitionScreenState extends State<FacialRecognitionScreen> {
         await _controller!.stopImageStream();
       }
 
+      // 1. Tomar la fotografía desde la cámara
       final XFile photo = await _controller!.takePicture();
-      final Uint8List bytes = await photo.readAsBytes();
+      final File imagenFile = File(photo.path);
 
-      final base64Image = base64Encode(bytes);
+      Map<String, dynamic> respuesta;
 
-      final resultado = widget.esRegistro
-          ? await _service.registrarRostro(
-              idUsuario: widget.idUsuario,
-              imagenBase64: base64Image,
-            )
-          : await _service.validarRostro(
-              idUsuario: widget.idUsuario,
-              imagenBase64: base64Image,
-            );
+      // 2. Si es registro, enviamos el archivo File con Multipart mediante BiometriaService
+      if (widget.esRegistro) {
+        respuesta = await _biometriaService.registrarBiometria(
+          imagenFile: imagenFile,
+          idUsuario: widget.idUsuario.toString(),
+        );
+      } else {
+        // En caso de validación, se procesa con el servicio correspondiente
+        final Uint8List bytes = await photo.readAsBytes();
+        final base64Image = base64Encode(bytes);
+        final bool exito = await _service.validarRostro(
+          idUsuario: widget.idUsuario,
+          imagenBase64: base64Image,
+        );
+        respuesta = {'exito': exito};
+      }
 
       if (!mounted) return;
       setState(() => _cargando = false);
 
-      if (resultado) {
+      final bool fueExitoso = respuesta['exito'] == true || respuesta['statusCode'] == 200;
+
+      if (fueExitoso) {
         await showDialog(
           context: context,
           barrierDismissible: false,
@@ -124,14 +138,13 @@ class _FacialRecognitionScreenState extends State<FacialRecognitionScreen> {
           ),
         );
       } else {
+        final mensajeError = respuesta['mensaje'] ?? 
+            (widget.esRegistro
+                ? 'El servidor no confirmó el registro biométrico.'
+                : 'Reconocimiento facial no coincide. Acceso denegado.');
+
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              widget.esRegistro
-                  ? 'El servidor no confirmó el registro biométrico.'
-                  : 'Reconocimiento facial no coincide. Acceso denegado.',
-            ),
-          ),
+          SnackBar(content: Text(mensajeError)),
         );
       }
     } catch (e) {
@@ -169,7 +182,7 @@ class _FacialRecognitionScreenState extends State<FacialRecognitionScreen> {
               ),
               const SizedBox(height: 20),
               
-              // Círculo/Recuadro con el preview de la cámara en vivo
+              // Recuadro con el preview de la cámara en vivo
               Container(
                 width: 280,
                 height: 350,
