@@ -3,22 +3,18 @@ import 'package:sigelab/laboratorio/laboratorios_screen.dart';
 
 import '../login/login_screen.dart';
 import '../mantenimiento/mantenimiento_screen.dart';
+import '../sesion/sesion_usuario.dart';
 import 'dashboard_screen.dart';
 
 import '../qr/qr_scanner_screen.dart';
 import '../devoluciones/devolucion_screen.dart';
-
 import '../prestamos/prestamos_inicio_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   final String nombreUsuario;
   final String rol;
 
-  const HomeScreen({
-    super.key,
-    this.nombreUsuario = 'Gerson Jiménez',
-    this.rol = 'Administrador',
-  });
+  const HomeScreen({super.key, this.nombreUsuario = '', this.rol = 'Usuario'});
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -30,6 +26,32 @@ class _HomeScreenState extends State<HomeScreen> {
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   final Color primaryDark = const Color(0xFF163C66);
+
+  // Obtiene el nombre de la persona que inició sesión.
+  String get _nombreUsuarioActual {
+    final nombreSesion = SesionUsuario.nombre?.trim() ?? '';
+
+    if (nombreSesion.isNotEmpty) {
+      return nombreSesion;
+    }
+
+    final nombreParametro = widget.nombreUsuario.trim();
+
+    if (nombreParametro.isNotEmpty) {
+      return nombreParametro;
+    }
+
+    return 'Usuario';
+  }
+
+  // Rol disponible en esta pantalla.
+  // Se utiliza Usuario como valor predeterminado porque
+  // todavía no estamos recibiendo el rol desde el login.
+  String get _rolActual {
+    final rol = widget.rol.trim();
+
+    return rol.isNotEmpty ? rol : 'Usuario';
+  }
 
   // Todas las opciones se definen una sola vez
   // para mantener sincronizados el menú móvil y el de escritorio.
@@ -74,6 +96,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Cierra la sesión y regresa a la pantalla de inicio de sesión.
   void _cerrarSesion() {
+    SesionUsuario.cerrarSesion();
+
     Navigator.pushAndRemoveUntil(
       context,
       MaterialPageRoute(builder: (context) => const LoginScreen()),
@@ -83,7 +107,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final iniciales = _obtenerIniciales(widget.nombreUsuario);
+    final iniciales = _obtenerIniciales(_nombreUsuarioActual);
+
     final anchoPantalla = MediaQuery.sizeOf(context).width;
     final esPantallaPequena = anchoPantalla < 700;
 
@@ -135,7 +160,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       child: Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
-                          'SIGELAB · ADMINISTRADOR',
+                          'SIGELAB · PORTAL UNIVERSITARIO',
                           style: TextStyle(
                             fontSize: 10,
                             color: Colors.grey,
@@ -146,8 +171,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
 
-                    // El menú móvil contiene las mismas opciones
-                    // que el menú de escritorio.
+                    // Navegación móvil.
                     Expanded(
                       child: ListView(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -155,7 +179,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
 
-                    // Perfil y cierre de sesión en la parte inferior.
+                    // Perfil y cierre de sesión.
                     _buildMobileDrawerProfile(iniciales),
                   ],
                 ),
@@ -217,7 +241,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               vertical: 6,
                             ),
                             child: Text(
-                              'SIGELAB · ADMINISTRADOR',
+                              'SIGELAB · PORTAL UNIVERSITARIO',
                               style: TextStyle(
                                 fontSize: 10,
                                 color: Colors.grey,
@@ -238,8 +262,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
 
-            // El separador solo se muestra cuando existe
-            // el menú lateral de escritorio.
+            // Separador del menú de escritorio.
             if (!esPantallaPequena)
               const VerticalDivider(
                 width: 1,
@@ -260,7 +283,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     color: Colors.white,
                     child: Row(
                       children: [
-                        // Botón para abrir el menú en móviles.
+                        // Botón del menú móvil.
                         if (esPantallaPequena)
                           IconButton(
                             icon: const Icon(Icons.menu),
@@ -279,7 +302,7 @@ class _HomeScreenState extends State<HomeScreen> {
                             children: [
                               if (!esPantallaPequena)
                                 const Text(
-                                  'PANEL ADMINISTRATIVO',
+                                  'PORTAL UNIVERSITARIO',
                                   style: TextStyle(
                                     fontSize: 10,
                                     color: Colors.grey,
@@ -302,8 +325,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
                         const SizedBox(width: 8),
 
-                        // En móvil se utiliza un avatar compacto
-                        // para evitar desbordamientos horizontales.
+                        // Perfil del usuario.
                         _buildHeaderProfile(
                           iniciales,
                           compacto: esPantallaPequena,
@@ -432,7 +454,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          widget.nombreUsuario,
+                          _nombreUsuarioActual,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -441,7 +463,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         Text(
-                          widget.rol,
+                          _rolActual,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -505,7 +527,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          widget.nombreUsuario,
+                          _nombreUsuarioActual,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -514,7 +536,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         ),
                         Text(
-                          widget.rol,
+                          _rolActual,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
@@ -556,7 +578,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildHeaderProfile(String iniciales, {required bool compacto}) {
     if (compacto) {
       return Tooltip(
-        message: '${widget.nombreUsuario} · ${widget.rol}',
+        message: '$_nombreUsuarioActual · $_rolActual',
         child: CircleAvatar(
           radius: 17,
           backgroundColor: primaryDark,
@@ -584,9 +606,9 @@ class _HomeScreenState extends State<HomeScreen> {
           const Icon(Icons.person_outline, size: 18, color: Colors.black54),
           const SizedBox(width: 8),
           ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 130),
+            constraints: const BoxConstraints(maxWidth: 150),
             child: Text(
-              '${widget.nombreUsuario} · ${widget.rol}',
+              '$_nombreUsuarioActual · $_rolActual',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
@@ -693,6 +715,8 @@ class _HomeScreenState extends State<HomeScreen> {
         return 'Reportes';
       case 9:
         return 'Auditoría';
+      case 10:
+        return 'Escanear QR';
       default:
         return 'Dashboard General';
     }

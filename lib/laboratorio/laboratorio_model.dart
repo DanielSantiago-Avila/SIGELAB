@@ -4,10 +4,10 @@ class Laboratorio {
   final String nombre;
   final String ubicacion;
   final String descripcion;
-  final bool activo;
+  final bool? activo;
   final int capacidad;
 
-  Laboratorio({
+  const Laboratorio({
     this.idLaboratorio = 0,
     required this.codigo,
     required this.nombre,
@@ -22,13 +22,17 @@ class Laboratorio {
       idLaboratorio: _convertirEntero(
         json['idLaboratorio'] ?? json['id_laboratorio'],
       ),
-      codigo: json['codigo']?.toString() ?? '',
-      nombre: json['nombre']?.toString() ?? '',
-      ubicacion: json['ubicacion']?.toString() ?? '',
-      descripcion: json['descripcion']?.toString() ?? '',
+      codigo: _convertirTexto(json['codigo']),
+      nombre: _convertirTexto(json['nombre']),
+      ubicacion: _convertirTexto(json['ubicacion']),
+      descripcion: _convertirTexto(json['descripcion']),
       activo: _convertirBooleano(json['activo']),
       capacidad: _convertirEntero(json['capacidad']),
     );
+  }
+
+  static String _convertirTexto(dynamic valor) {
+    return valor?.toString().trim() ?? '';
   }
 
   static int _convertirEntero(dynamic valor) {
@@ -43,7 +47,11 @@ class Laboratorio {
     return int.tryParse(valor?.toString() ?? '') ?? 0;
   }
 
-  static bool _convertirBooleano(dynamic valor) {
+  static bool? _convertirBooleano(dynamic valor) {
+    if (valor == null) {
+      return null;
+    }
+
     if (valor is bool) {
       return valor;
     }
@@ -52,20 +60,16 @@ class Laboratorio {
       return valor != 0;
     }
 
-    final texto = valor?.toString().toLowerCase().trim();
+    final texto = valor.toString().trim().toLowerCase();
 
-    return texto == 'true' || texto == '1';
-  }
+    if (texto == 'true' || texto == '1') {
+      return true;
+    }
 
-  Map<String, dynamic> toJson() {
-    return {
-      if (idLaboratorio > 0) 'id_laboratorio': idLaboratorio,
-      'codigo': codigo,
-      'nombre': nombre,
-      'ubicacion': ubicacion,
-      'descripcion': descripcion,
-      'activo': activo,
-      'capacidad': capacidad,
-    };
+    if (texto == 'false' || texto == '0') {
+      return false;
+    }
+
+    return null;
   }
 }
