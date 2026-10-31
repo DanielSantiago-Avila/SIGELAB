@@ -10,6 +10,8 @@ import '../qr/qr_scanner_screen.dart';
 import '../devoluciones/devolucion_screen.dart';
 import '../prestamos/prestamos_inicio_screen.dart';
 
+import 'package:sigelab/tipo_equipo/tipos_equipo_screen.dart';
+
 class HomeScreen extends StatefulWidget {
   final String nombreUsuario;
   final String rol;
@@ -642,6 +644,17 @@ class _HomeScreenState extends State<HomeScreen> {
       case 2:
         // Pantalla de laboratorios existente.
         return const LaboratoriosScreen();
+
+      case 3:
+        final idUsuario = SesionUsuario.idUsuario;
+
+        if (idUsuario == null || idUsuario <= 0) {
+          return const Center(
+            child: Text('No se encontró una sesión de usuario válida.'),
+          );
+        }
+
+        return TiposEquipoScreen(idUsuarioAccionante: idUsuario);
 
       case 5:
         // Pantalla principal del módulo de préstamos.
