@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sigelab/laboratorio/laboratorios_screen.dart';
+import '../usuario/usuarios_screen.dart';
 
 import '../login/login_screen.dart';
 import '../mantenimiento/mantenimiento_screen.dart';
@@ -640,6 +641,9 @@ class _HomeScreenState extends State<HomeScreen> {
       case 0:
         // Dashboard integrado.
         return DashboardScreen();
+        
+      case 1:
+        return const UsuariosScreen();
 
       case 2:
         // Pantalla de laboratorios existente.

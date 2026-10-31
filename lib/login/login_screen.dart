@@ -99,9 +99,9 @@ class _LoginScreenState extends State<LoginScreen> {
       'rol=${res['rol']}',
     );
 
-    setState(() => _cargando = false);
-
     if (!mounted) return;
+
+setState(() => _cargando = false);
 
     if (res['exito']) {
       final dynamic datosRaw = res['datos'];
@@ -112,17 +112,35 @@ class _LoginScreenState extends State<LoginScreen> {
 
       final int idUsuario = (datosLogin['id_usuario'] as num).toInt();
 
-      final String nombreCompleto =
-          '${datosLogin['nombre'] ?? ''} ${datosLogin['apellido'] ?? ''}'
-              .trim();
+      
+final String nombreCompleto =
+    '${datosLogin['nombre'] ?? ''} ${datosLogin['apellido'] ?? ''}'
+        .trim();
 
-      SesionUsuario.guardar(
-        id: idUsuario,
-        nombreUsuario: datosLogin['usuario']?.toString(),
-        nombreCompleto: nombreCompleto,
-      );
+final dynamic rolRaw =
+    datosLogin['id_rol'] ?? datosLogin['idRol'];
 
-      debugPrint('SESIÓN GUARDADA: ID ${SesionUsuario.idUsuario}');
+final int? idRol = rolRaw is num
+    ? rolRaw.toInt()
+    : int.tryParse(rolRaw?.toString() ?? '');
+
+debugPrint('LOGIN - ID del rol: $idRol');
+
+
+
+SesionUsuario.guardar(
+  id: idUsuario,
+  nombreUsuario: datosLogin['usuario']?.toString(),
+  nombreCompleto: nombreCompleto,
+  rol: idRol,
+);
+
+debugPrint('SESIÓN GUARDADA: ID ${SesionUsuario.idUsuario}');
+debugPrint('SESIÓN GUARDADA: ROL ${SesionUsuario.idRol}');
+debugPrint(
+  '¿ES ADMINISTRADOR?: ${SesionUsuario.esAdministrador}',
+);
+
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
