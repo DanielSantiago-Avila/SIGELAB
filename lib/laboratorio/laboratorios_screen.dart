@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+
+import '../sesion/sesion_usuario.dart';
 import 'laboratorio_model.dart';
 import 'laboratorio_service.dart';
 
@@ -12,6 +14,8 @@ class LaboratoriosScreen extends StatefulWidget {
 class _LaboratoriosScreenState extends State<LaboratoriosScreen> {
   final LaboratorioService _service = LaboratorioService();
 
+  final _formKey = GlobalKey<FormState>();
+
   final _codigoController = TextEditingController();
   final _nombreController = TextEditingController();
   final _ubicacionController = TextEditingController();
@@ -23,15 +27,21 @@ class _LaboratoriosScreenState extends State<LaboratoriosScreen> {
 
   List<Laboratorio> _listaLaboratorios = [];
   List<Laboratorio> _listaFiltrada = [];
+
+  Laboratorio? _laboratorioSeleccionado;
+
   bool _cargando = true;
   bool _procesando = false;
-  Laboratorio? _laboratorioSeleccionado;
+
+  String? _errorCarga;
 
   @override
   void initState() {
     super.initState();
-    _cargarLaboratorios();
+
     _busquedaController.addListener(_filtrarLaboratorios);
+
+    _cargarLaboratorios();
   }
 
   @override
@@ -41,49 +51,100 @@ class _LaboratoriosScreenState extends State<LaboratoriosScreen> {
     _ubicacionController.dispose();
     _descripcionController.dispose();
     _capacidadController.dispose();
+
+    _busquedaController.removeListener(_filtrarLaboratorios);
     _busquedaController.dispose();
+
     super.dispose();
   }
 
+  // ============================================================
+  // CARGAR LABORATORIOS DESDE LA API
+  // ============================================================
+
   Future<void> _cargarLaboratorios() async {
-    setState(() => _cargando = true);
-    final datos = await _service.obtenerLaboratorios();
+    if (!mounted) return;
+
     setState(() {
-      _listaLaboratorios = datos;
-      _listaFiltrada = datos;
-      _cargando = false;
+      _cargando = true;
+      _errorCarga = null;
     });
-    _filtrarLaboratorios();
+
+    try {
+      final datos = await _service.obtenerLaboratorios();
+
+      if (!mounted) return;
+
+      setState(() {
+        _listaLaboratorios = datos;
+      });
+
+      _filtrarLaboratorios();
+    } catch (error) {
+      if (!mounted) return;
+
+      setState(() {
+        _errorCarga = error.toString();
+        _listaLaboratorios = [];
+        _listaFiltrada = [];
+      });
+    } finally {
+      if (mounted) {
+        setState(() => _cargando = false);
+      }
+    }
   }
+
+  // ============================================================
+  // FILTRAR LABORATORIOS
+  // ============================================================
 
   void _filtrarLaboratorios() {
-    final query = _busquedaController.text.toLowerCase().trim();
+    if (!mounted) return;
+
+    final busqueda = _busquedaController.text.toLowerCase().trim();
+
+    final resultados = _listaLaboratorios.where((laboratorio) {
+      return laboratorio.nombre.toLowerCase().contains(busqueda) ||
+          laboratorio.codigo.toLowerCase().contains(busqueda) ||
+          laboratorio.ubicacion.toLowerCase().contains(busqueda);
+    }).toList();
+
     setState(() {
-      if (query.isEmpty) {
-        _listaFiltrada = _listaLaboratorios;
+      _listaFiltrada = resultados;
+    });
+  }
+
+  // ============================================================
+  // SELECCIONAR LABORATORIO
+  // ============================================================
+
+  void _seleccionarFila(Laboratorio laboratorio) {
+    setState(() {
+      if (_laboratorioSeleccionado?.idLaboratorio ==
+          laboratorio.idLaboratorio) {
+        _laboratorioSeleccionado = null;
+
+        _codigoController.clear();
+        _nombreController.clear();
+        _ubicacionController.clear();
+        _descripcionController.clear();
+        _capacidadController.clear();
       } else {
-        _listaFiltrada = _listaLaboratorios.where((lab) {
-          return lab.nombre.toLowerCase().contains(query) ||
-                 lab.codigo.toLowerCase().contains(query);
-        }).toList();
+        _laboratorioSeleccionado = laboratorio;
+
+        _codigoController.text = laboratorio.codigo;
+        _nombreController.text = laboratorio.nombre;
+        _ubicacionController.text = laboratorio.ubicacion;
+        _descripcionController.text = laboratorio.descripcion;
+        _capacidadController.text = laboratorio.capacidad.toString();
       }
     });
   }
 
-  void _seleccionarFila(Laboratorio lab) {
-    setState(() {
-      if (_laboratorioSeleccionado?.idLaboratorio == lab.idLaboratorio) {
-        _limpiarFormulario();
-      } else {
-        _laboratorioSeleccionado = lab;
-        _codigoController.text = lab.codigo;
-        _nombreController.text = lab.nombre;
-        _ubicacionController.text = lab.ubicacion;
-        _descripcionController.text = lab.descripcion;
-        _capacidadController.text = lab.capacidad.toString();
-      }
-    });
-  }
+  // ============================================================
+  // LIMPIAR FORMULARIO
+  // ============================================================
 
   void _limpiarFormulario() {
     _codigoController.clear();
@@ -91,260 +152,604 @@ class _LaboratoriosScreenState extends State<LaboratoriosScreen> {
     _ubicacionController.clear();
     _descripcionController.clear();
     _capacidadController.clear();
-    setState(() => _laboratorioSeleccionado = null);
+
+    setState(() {
+      _laboratorioSeleccionado = null;
+    });
   }
 
-        Future<void> _guardarONuevo() async {
-        if (_codigoController.text.trim().isEmpty || _nombreController.text.trim().isEmpty) {
-          _mostrarMensaje('El código y el nombre son obligatorios', Colors.orange);
-          return;
-        }
+  // ============================================================
+  // VALIDAR USUARIO DE LA SESIÓN
+  // ============================================================
 
-        setState(() => _procesando = true);
+  int? get _idUsuarioActual {
+    final id = SesionUsuario.idUsuario;
 
-        // Estructura limpia exacta para sp_laboratorio_crear / sp_laboratorio_actualizar
-        final Map<String, dynamic> datosJson = {
-          'codigo': _codigoController.text.trim(),
-          'nombre': _nombreController.text.trim(),
-          'ubicacion': _ubicacionController.text.trim(),
-          'descripcion': _descripcionController.text.trim(),
-          'capacidad': int.tryParse(_capacidadController.text.trim()) ?? 0,
-        };
+    if (id == null || id <= 0) {
+      return null;
+    }
 
-        bool exito;
-        if (_laboratorioSeleccionado == null) {
-          exito = await _service.crearLaboratorio(datosJson);
-        } else {
-          datosJson['id_laboratorio'] = _laboratorioSeleccionado!.idLaboratorio;
-          exito = await _service.actualizarLaboratorio(datosJson);
-        }
+    return id;
+  }
 
-        setState(() => _procesando = false);
+  // ============================================================
+  // CREAR O ACTUALIZAR LABORATORIO
+  // ============================================================
 
-        if (exito) {
-          _mostrarMensaje('Operación realizada con éxito', Colors.green);
-          _limpiarFormulario();
-          _cargarLaboratorios();
-        } else {
-          _mostrarMensaje('Error al procesar solicitud', Colors.red);
-        }
-}
+  Future<void> _guardarONuevo() async {
+    if (_procesando) return;
 
-  Future<void> _cambiarEstado() async {
-    if (_laboratorioSeleccionado == null) return;
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    final idUsuario = _idUsuarioActual;
+
+    if (idUsuario == null) {
+      _mostrarMensaje(
+        'No se encontró una sesión de usuario válida. Vuelve a iniciar sesión.',
+        Colors.red,
+      );
+      return;
+    }
+
+    final codigo = _codigoController.text.trim();
+    final nombre = _nombreController.text.trim();
+    final ubicacion = _ubicacionController.text.trim();
+    final descripcion = _descripcionController.text.trim();
+    final capacidad = int.parse(_capacidadController.text.trim());
+
+    final seleccionado = _laboratorioSeleccionado;
 
     setState(() => _procesando = true);
-    final nuevoEstado = !_laboratorioSeleccionado!.activo;
-    
-    bool exito = await _service.cambiarEstadoLaboratorio(
-      _laboratorioSeleccionado!.idLaboratorio,
-      nuevoEstado,
-    );
 
-    setState(() => _procesando = false);
+    try {
+      if (seleccionado == null) {
+        // CREAR LABORATORIO
+        await _service.crearLaboratorio(
+          idUsuarioAccionante: idUsuario,
+          codigo: codigo,
+          nombre: nombre,
+          ubicacion: ubicacion,
+          descripcion: descripcion,
+          capacidad: capacidad,
+        );
 
-    if (exito) {
-      _mostrarMensaje('Estado cambiado correctamente', Colors.green);
+        if (!mounted) return;
+
+        _mostrarMensaje(
+          'Solicitud de creación enviada correctamente.',
+          Colors.green,
+        );
+      } else {
+        // ACTUALIZAR LABORATORIO
+        await _service.actualizarLaboratorio(
+          idUsuarioAccionante: idUsuario,
+          idLaboratorio: seleccionado.idLaboratorio,
+          nombre: nombre,
+          ubicacion: ubicacion,
+          capacidad: capacidad,
+        );
+
+        if (!mounted) return;
+
+        _mostrarMensaje(
+          'Solicitud de actualización enviada correctamente.',
+          Colors.green,
+        );
+      }
+
       _limpiarFormulario();
-      _cargarLaboratorios();
-    } else {
-      _mostrarMensaje('Error al cambiar estado', Colors.red);
+
+      await _cargarLaboratorios();
+    } catch (error) {
+      if (!mounted) return;
+
+      _mostrarMensaje('No se pudo guardar el laboratorio: $error', Colors.red);
+    } finally {
+      if (mounted) {
+        setState(() => _procesando = false);
+      }
     }
   }
 
-  void _mostrarMensaje(String texto, Color col) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(texto), backgroundColor: col),
+  // ============================================================
+  // CAMBIAR ESTADO DEL LABORATORIO
+  // ============================================================
+
+  Future<void> _cambiarEstado() async {
+    final laboratorio = _laboratorioSeleccionado;
+
+    if (_procesando || laboratorio == null) {
+      return;
+    }
+
+    if (laboratorio.activo == null) {
+      _mostrarMensaje(
+        'La API no proporcionó el estado de este laboratorio.',
+        Colors.orange,
+      );
+      return;
+    }
+
+    final nuevoEstado = !laboratorio.activo!;
+
+    final confirmado = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Confirmar cambio de estado'),
+          content: Text(
+            nuevoEstado
+                ? '¿Deseas activar el laboratorio ${laboratorio.codigo}?'
+                : '¿Deseas desactivar el laboratorio ${laboratorio.codigo}?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Cancelar'),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.pop(context, true),
+              child: const Text('Confirmar'),
+            ),
+          ],
+        );
+      },
     );
+
+    if (confirmado != true || !mounted) {
+      return;
+    }
+
+    setState(() => _procesando = true);
+
+    try {
+      await _service.cambiarEstadoLaboratorio(
+        idLaboratorio: laboratorio.idLaboratorio,
+        nuevoEstado: nuevoEstado,
+      );
+
+      if (!mounted) return;
+
+      _mostrarMensaje(
+        nuevoEstado
+            ? 'Solicitud de activación enviada correctamente.'
+            : 'Solicitud de desactivación enviada correctamente.',
+        Colors.green,
+      );
+
+      _limpiarFormulario();
+
+      await _cargarLaboratorios();
+    } catch (error) {
+      if (!mounted) return;
+
+      _mostrarMensaje('No se pudo cambiar el estado: $error', Colors.red);
+    } finally {
+      if (mounted) {
+        setState(() => _procesando = false);
+      }
+    }
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(24.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // FORMULARIO
-          _buildHeader(_laboratorioSeleccionado == null ? 'Nuevo Laboratorio' : 'Editar Laboratorio'),
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: _boxStyle(),
-            child: Column(
-              children: [
-                _buildField('Código de laboratorio', _codigoController),
-                const SizedBox(height: 12),
-                _buildField('Nombre del laboratorio', _nombreController),
-                const SizedBox(height: 12),
-                _buildField('Ubicación', _ubicacionController),
-                const SizedBox(height: 12),
-                _buildField('Descripción', _descripcionController),
-                const SizedBox(height: 12),
-                _buildField('Capacidad', _capacidadController, isNum: true),
-                const SizedBox(height: 20),
-                Row(
-                  children: [
-                    ElevatedButton(
-                      style: _btnStyle(primaryDark),
-                      onPressed: _procesando ? null : _guardarONuevo,
-                      child: Text(_laboratorioSeleccionado == null ? 'Guardar' : 'Actualizar', style: const TextStyle(color: Colors.white)),
-                    ),
-                    const SizedBox(width: 12),
-                    ElevatedButton(
-                      style: _btnStyle(const Color(0xFFC5A059)),
-                      onPressed: _limpiarFormulario,
-                      child: const Text('Cancelar', style: TextStyle(color: Colors.white)),
-                    ),
-                  ],
-                )
-              ],
-            ),
-          ),
+  // ============================================================
+  // MOSTRAR MENSAJES
+  // ============================================================
 
-          const SizedBox(height: 24),
-
-          // BÚSQUEDA Y ACCIONES
-          _buildHeader('Acciones y búsqueda'),
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: _boxStyle(),
-
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Búsqueda por nombre de laboratorio',
-                  style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    fontSize: 13,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _busquedaController,
-                  decoration: InputDecoration(
-                    hintText: 'Ej. DEM026-LAB-RED',
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 10,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    ElevatedButton(
-                      style: _btnStyle(primaryDark),
-                      onPressed: _limpiarFormulario,
-                      child: const Text(
-                        'Agregar',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ),
-                    ElevatedButton(
-                      style: _btnStyle(
-                        _laboratorioSeleccionado != null
-                            ? primaryDark
-                            : Colors.grey,
-                      ),
-                      onPressed: _laboratorioSeleccionado != null
-                          ? _guardarONuevo
-                          : null,
-                      child: const Text(
-                        'Modificar',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ),
-                    ElevatedButton(
-                      style: _btnStyle(
-                        _laboratorioSeleccionado != null
-                            ? primaryDark
-                            : Colors.grey,
-                      ),
-                      onPressed: _laboratorioSeleccionado != null
-                          ? _cambiarEstado
-                          : null,
-                      child: const Text(
-                        'Cambiar estado',
-                        style: TextStyle(color: Colors.white),
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-
-          ),
-
-          const SizedBox(height: 24),
-
-          // TABLA
-          _buildHeader('Lista de laboratorios'),
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            decoration: _boxStyle(),
-            child: _cargando
-                ? const Center(child: Padding(padding: EdgeInsets.all(24), child: CircularProgressIndicator()))
-                : _listaFiltrada.isEmpty
-                    ? const Center(child: Padding(padding: EdgeInsets.all(32), child: Text('No hay laboratorios registrados.')))
-                    : SingleChildScrollView(
-                        scrollDirection: Axis.horizontal,
-                        child: DataTable(
-                          showCheckboxColumn: false,
-                          columns: const [
-                            DataColumn(label: Text('ID', style: TextStyle(fontWeight: FontWeight.bold))),
-                            DataColumn(label: Text('Código', style: TextStyle(fontWeight: FontWeight.bold))),
-                            DataColumn(label: Text('Nombre', style: TextStyle(fontWeight: FontWeight.bold))),
-                            DataColumn(label: Text('Ubicación', style: TextStyle(fontWeight: FontWeight.bold))),
-                            DataColumn(label: Text('Descripción', style: TextStyle(fontWeight: FontWeight.bold))),
-                            DataColumn(label: Text('Capacidad', style: TextStyle(fontWeight: FontWeight.bold))),
-                            DataColumn(label: Text('Estado', style: TextStyle(fontWeight: FontWeight.bold))),
-                          ],
-                          rows: _listaFiltrada.map((lab) {
-                            final isSel = _laboratorioSeleccionado?.idLaboratorio == lab.idLaboratorio;
-                            return DataRow(
-                              selected: isSel,
-                              onSelectChanged: (_) => _seleccionarFila(lab),
-                              cells: [
-                                DataCell(Text(lab.idLaboratorio.toString())),
-                                DataCell(Text(lab.codigo)),
-                                DataCell(Text(lab.nombre)),
-                                DataCell(Text(lab.ubicacion)),
-                                DataCell(Text(lab.descripcion)),
-                                DataCell(Text(lab.capacidad.toString())),
-                                DataCell(
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: lab.activo ? Colors.green.shade100 : Colors.red.shade100,
-                                      borderRadius: BorderRadius.circular(12),
-                                    ),
-                                    child: Text(
-                                      lab.activo ? 'Activo' : 'Inactivo',
-                                      style: TextStyle(
-                                        color: lab.activo ? Colors.green.shade800 : Colors.red.shade800,
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            );
-                          }).toList(),
-                        ),
-                      ),
-          ),
-        ],
+  void _mostrarMensaje(String texto, Color color) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(texto),
+        backgroundColor: color,
+        duration: const Duration(seconds: 4),
       ),
     );
   }
+
+  // ============================================================
+  // CONSTRUIR PANTALLA
+  // ============================================================
+
+  @override
+  Widget build(BuildContext context) {
+    final seleccionado = _laboratorioSeleccionado;
+
+    return RefreshIndicator(
+      onRefresh: _cargarLaboratorios,
+      child: SingleChildScrollView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // FORMULARIO
+            _buildHeader(
+              seleccionado == null
+                  ? 'Nuevo Laboratorio'
+                  : 'Editar Laboratorio #${seleccionado.idLaboratorio}',
+            ),
+
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: _boxStyle(),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  children: [
+                    _buildField(
+                      'Código de laboratorio',
+                      _codigoController,
+                      enabled: !_procesando && seleccionado == null,
+                      obligatorio: true,
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    _buildField(
+                      'Nombre del laboratorio',
+                      _nombreController,
+                      enabled: !_procesando,
+                      obligatorio: true,
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    _buildField(
+                      'Ubicación',
+                      _ubicacionController,
+                      enabled: !_procesando,
+                      obligatorio: true,
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    _buildField(
+                      'Descripción',
+                      _descripcionController,
+                      enabled: !_procesando && seleccionado == null,
+                      maxLines: 2,
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    _buildField(
+                      'Capacidad',
+                      _capacidadController,
+                      enabled: !_procesando,
+                      isNum: true,
+                      obligatorio: true,
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    Wrap(
+                      spacing: 12,
+                      runSpacing: 10,
+                      children: [
+                        ElevatedButton.icon(
+                          style: _btnStyle(primaryDark),
+                          onPressed: _procesando ? null : _guardarONuevo,
+                          icon: Icon(
+                            seleccionado == null ? Icons.save : Icons.edit,
+                            color: Colors.white,
+                          ),
+                          label: Text(
+                            seleccionado == null ? 'Guardar' : 'Actualizar',
+                            style: const TextStyle(color: Colors.white),
+                          ),
+                        ),
+
+                        ElevatedButton.icon(
+                          style: _btnStyle(const Color(0xFFC5A059)),
+                          onPressed: _procesando ? null : _limpiarFormulario,
+                          icon: const Icon(Icons.clear, color: Colors.white),
+                          label: const Text(
+                            'Cancelar',
+                            style: TextStyle(color: Colors.white),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    if (_procesando) ...[
+                      const SizedBox(height: 16),
+                      const LinearProgressIndicator(),
+                    ],
+
+                    if (seleccionado != null) ...[
+                      const SizedBox(height: 12),
+                      const Text(
+                        'En la actualización actual, el código y la descripción '
+                        'se conservan sin modificaciones.',
+                        style: TextStyle(color: Colors.grey, fontSize: 12),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // BÚSQUEDA Y ACCIONES
+            _buildHeader('Acciones y búsqueda'),
+
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: _boxStyle(),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Buscar por código, nombre o ubicación',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  TextField(
+                    controller: _busquedaController,
+                    decoration: InputDecoration(
+                      hintText: 'Ej. DEMO26-LAB-RED',
+                      prefixIcon: const Icon(Icons.search),
+                      suffixIcon: IconButton(
+                        tooltip: 'Limpiar búsqueda',
+                        onPressed: _busquedaController.clear,
+                        icon: const Icon(Icons.clear),
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      ElevatedButton.icon(
+                        style: _btnStyle(primaryDark),
+                        onPressed: _limpiarFormulario,
+                        icon: const Icon(Icons.add, color: Colors.white),
+                        label: const Text(
+                          'Agregar',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+
+                      ElevatedButton.icon(
+                        style: _btnStyle(
+                          seleccionado != null ? primaryDark : Colors.grey,
+                        ),
+                        onPressed: seleccionado != null && !_procesando
+                            ? _guardarONuevo
+                            : null,
+                        icon: const Icon(Icons.edit, color: Colors.white),
+                        label: const Text(
+                          'Modificar',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+
+                      ElevatedButton.icon(
+                        style: _btnStyle(
+                          seleccionado != null && seleccionado.activo != null
+                              ? primaryDark
+                              : Colors.grey,
+                        ),
+                        onPressed:
+                            seleccionado != null &&
+                                seleccionado.activo != null &&
+                                !_procesando
+                            ? _cambiarEstado
+                            : null,
+                        icon: const Icon(Icons.toggle_on, color: Colors.white),
+                        label: const Text(
+                          'Cambiar estado',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+
+                      OutlinedButton.icon(
+                        onPressed: _cargando ? null : _cargarLaboratorios,
+                        icon: const Icon(Icons.refresh),
+                        label: const Text('Actualizar lista'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 24),
+
+            // LISTA DE LABORATORIOS
+            _buildHeader('Lista de laboratorios'),
+
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: _boxStyle(),
+              child: _construirContenidoTabla(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ============================================================
+  // CONTENIDO DE LA TABLA
+  // ============================================================
+
+  Widget _construirContenidoTabla() {
+    if (_cargando) {
+      return const Padding(
+        padding: EdgeInsets.all(32),
+        child: Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_errorCarga != null) {
+      return Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          children: [
+            const Icon(Icons.cloud_off, color: Colors.red, size: 42),
+            const SizedBox(height: 12),
+            const Text(
+              'No fue posible cargar los laboratorios.',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 8),
+            Text(_errorCarga!, textAlign: TextAlign.center),
+            const SizedBox(height: 16),
+            ElevatedButton.icon(
+              onPressed: _cargarLaboratorios,
+              icon: const Icon(Icons.refresh),
+              label: const Text('Reintentar'),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_listaFiltrada.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(32),
+        child: Center(
+          child: Text('No hay laboratorios que coincidan con la búsqueda.'),
+        ),
+      );
+    }
+
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: DataTable(
+        showCheckboxColumn: false,
+        columns: const [
+          DataColumn(
+            label: Text('ID', style: TextStyle(fontWeight: FontWeight.bold)),
+          ),
+          DataColumn(
+            label: Text(
+              'Código',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          DataColumn(
+            label: Text(
+              'Nombre',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          DataColumn(
+            label: Text(
+              'Ubicación',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          DataColumn(
+            label: Text(
+              'Descripción',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          DataColumn(
+            label: Text(
+              'Capacidad',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+          DataColumn(
+            label: Text(
+              'Estado',
+              style: TextStyle(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+        rows: _listaFiltrada.map((laboratorio) {
+          final seleccionado =
+              _laboratorioSeleccionado?.idLaboratorio ==
+              laboratorio.idLaboratorio;
+
+          final Color colorEstado;
+
+          if (laboratorio.activo == true) {
+            colorEstado = Colors.green;
+          } else if (laboratorio.activo == false) {
+            colorEstado = Colors.red;
+          } else {
+            colorEstado = Colors.grey;
+          }
+
+          final String textoEstado;
+
+          if (laboratorio.activo == true) {
+            textoEstado = 'Activo';
+          } else if (laboratorio.activo == false) {
+            textoEstado = 'Inactivo';
+          } else {
+            textoEstado = 'No disponible';
+          }
+
+          return DataRow(
+            selected: seleccionado,
+            onSelectChanged: (_) {
+              if (!_procesando) {
+                _seleccionarFila(laboratorio);
+              }
+            },
+            cells: [
+              DataCell(Text(laboratorio.idLaboratorio.toString())),
+              DataCell(Text(laboratorio.codigo)),
+              DataCell(Text(laboratorio.nombre)),
+              DataCell(Text(laboratorio.ubicacion)),
+              DataCell(
+                ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 200),
+                  child: Text(
+                    laboratorio.descripcion,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+              DataCell(Text(laboratorio.capacidad.toString())),
+              DataCell(
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: colorEstado.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    textoEstado,
+                    style: TextStyle(
+                      color: colorEstado,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  // ============================================================
+  // COMPONENTES VISUALES
+  // ============================================================
 
   Widget _buildHeader(String title) {
     return Container(
@@ -352,33 +757,82 @@ class _LaboratoriosScreenState extends State<LaboratoriosScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
         color: primaryDark,
-        borderRadius: const BorderRadius.only(topLeft: Radius.circular(8), topRight: Radius.circular(8)),
+        borderRadius: const BorderRadius.only(
+          topLeft: Radius.circular(8),
+          topRight: Radius.circular(8),
+        ),
       ),
-      child: Text(title, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 15)),
+      child: Text(
+        title,
+        style: const TextStyle(
+          color: Colors.white,
+          fontWeight: FontWeight.bold,
+          fontSize: 15,
+        ),
+      ),
     );
   }
 
   BoxDecoration _boxStyle() {
     return BoxDecoration(
       color: Colors.white,
-      borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(8), bottomRight: Radius.circular(8)),
+      borderRadius: const BorderRadius.only(
+        bottomLeft: Radius.circular(8),
+        bottomRight: Radius.circular(8),
+      ),
       border: Border.all(color: const Color(0xFFE2E8F0)),
     );
   }
 
-  Widget _buildField(String label, TextEditingController ctrl, {bool isNum = false}) {
+  Widget _buildField(
+    String label,
+    TextEditingController controller, {
+    bool isNum = false,
+    bool obligatorio = false,
+    bool enabled = true,
+    int maxLines = 1,
+  }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(label, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+        Text(
+          label,
+          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+        ),
+
         const SizedBox(height: 6),
-        TextField(
-          controller: ctrl,
+
+        TextFormField(
+          controller: controller,
+          enabled: enabled,
+          maxLines: maxLines,
           keyboardType: isNum ? TextInputType.number : TextInputType.text,
           decoration: InputDecoration(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+            filled: !enabled,
+            fillColor: const Color(0xFFF1F5F9),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 14,
+              vertical: 10,
+            ),
             border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
           ),
+          validator: (value) {
+            final texto = value?.trim() ?? '';
+
+            if (obligatorio && texto.isEmpty) {
+              return 'Este campo es obligatorio.';
+            }
+
+            if (isNum && texto.isNotEmpty) {
+              final numero = int.tryParse(texto);
+
+              if (numero == null || numero < 0) {
+                return 'Ingresa un número entero válido.';
+              }
+            }
+
+            return null;
+          },
         ),
       ],
     );
@@ -387,6 +841,7 @@ class _LaboratoriosScreenState extends State<LaboratoriosScreen> {
   ButtonStyle _btnStyle(Color color) {
     return ElevatedButton.styleFrom(
       backgroundColor: color,
+      foregroundColor: Colors.white,
       padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
     );
