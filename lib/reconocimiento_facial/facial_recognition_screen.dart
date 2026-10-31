@@ -25,8 +25,9 @@ class _FacialRecognitionScreenState extends State<FacialRecognitionScreen> {
   List<CameraDescription>? _cameras;
   bool _isCameraInitialized = false;
   bool _cargando = false;
+  String? _cameraError;
   final FacialRecognitionService _service =
-      FacialRecognitionService(baseUrl: 'https://tu-backend-api.com');
+      FacialRecognitionService(baseUrl: 'http://18.119.123.181', usarSimulacion: false);
 
   @override
   void initState() {
@@ -52,10 +53,19 @@ class _FacialRecognitionScreenState extends State<FacialRecognitionScreen> {
 
         await _controller!.initialize();
         if (!mounted) return;
-        setState(() => _isCameraInitialized = true);
+        setState(() {
+          _cameraError = null;
+          _isCameraInitialized = true;
+        });
+      } else {
+        throw StateError('No se encontraron cámaras disponibles.');
       }
     } catch (e) {
-      debugPrint('Error al inicializar cámara: $e');
+      if (!mounted) return;
+      setState(() {
+        _cameraError = 'No se pudo iniciar la cámara: $e';
+        _isCameraInitialized = false;
+      });
     }
   }
 
@@ -65,97 +75,70 @@ class _FacialRecognitionScreenState extends State<FacialRecognitionScreen> {
     setState(() => _cargando = true);
 
     try {
-      // Captura el frame en tiempo real
-      final XFile photo = await _controller!.takePicture();
-      final Uint8List bytes = await photo.readAsBytes();
-      final String base64Image = base64Encode(bytes);
-
-      bool resultado = false;
-
-      if (widget.esRegistro) {
-        // Guarda la biometría inicial del usuario en BIOMETRIA_USUARIO
-        resultado = await _service.registrarRostro(
-          idUsuario: widget.idUsuario,
-          imagenBase64: base64Image,
-        );
-      } else {
-        // Valida el rostro capturado contra el vector guardado
-        resultado = await _service.validarRostro(
-          idUsuario: widget.idUsuario,
-          imagenBase64: base64Image,
-        );
+      if (_controller!.value.isStreamingImages) {
+        await _controller!.stopImageStream();
       }
 
+      final XFile photo = await _controller!.takePicture();
+      final Uint8List bytes = await photo.readAsBytes();
+
+      final base64Image = base64Encode(bytes);
+
+      final resultado = widget.esRegistro
+          ? await _service.registrarRostro(
+              idUsuario: widget.idUsuario,
+              imagenBase64: base64Image,
+            )
+          : await _service.validarRostro(
+              idUsuario: widget.idUsuario,
+              imagenBase64: base64Image,
+            );
+
+      if (!mounted) return;
       setState(() => _cargando = false);
 
       if (resultado) {
-        if (!mounted) return;
-
-        // Muestra diálogo flotante de éxito
         await showDialog(
           context: context,
           barrierDismissible: false,
-          builder: (BuildContext context) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
-              ),
-              title: Column(
-                children: const [
-                  Icon(Icons.check_circle_outline, color: Colors.green, size: 60),
-                  SizedBox(height: 10),
-                  Text(
-                    '¡Validación Exitosa!',
-                    style: TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                ],
-              ),
-              content: Text(
-                widget.esRegistro
-                    ? 'Su rostro ha sido registrado correctamente en el sistema.'
-                    : 'Rostro reconocido con éxito. ¡Bienvenido al sistema!',
-                textAlign: TextAlign.center,
-              ),
-              actions: [
-                Center(
-                  child: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.green,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                    ),
-                    onPressed: () {
-                      Navigator.of(context).pop(); // Cierra el modal
-                    },
-                    child: const Text('Continuar al Home'),
-                  ),
+          builder: (context) => AlertDialog(
+            title: const Text('Éxito', textAlign: TextAlign.center),
+            content: Text(
+              widget.esRegistro
+                  ? 'Su rostro ha sido registrado correctamente en el sistema.'
+                  : 'Rostro reconocido con éxito. ¡Bienvenido al sistema!',
+              textAlign: TextAlign.center,
+            ),
+            actions: [
+              Center(
+                child: ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    widget.onSuccess();
+                  },
+                  child: const Text('Continuar al Home', style: TextStyle(color: Colors.white)),
                 ),
-              ],
-            );
-          },
+              ),
+            ],
+          ),
         );
-
-        // Avanza al Home al cerrar la ventana
-        widget.onSuccess();
       } else {
-        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
               widget.esRegistro
-                  ? 'Error al registrar biometría.'
+                  ? 'El servidor no confirmó el registro biométrico.'
                   : 'Reconocimiento facial no coincide. Acceso denegado.',
             ),
           ),
         );
       }
     } catch (e) {
-      setState(() => _cargando = false);
       if (!mounted) return;
+      setState(() => _cargando = false);
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Error en el escaneo: $e')),
+        SnackBar(content: Text('Error al procesar la solicitud facial: $e')),
       );
     }
   }
@@ -197,7 +180,24 @@ class _FacialRecognitionScreenState extends State<FacialRecognitionScreen> {
                 clipBehavior: Clip.hardEdge,
                 child: _isCameraInitialized
                     ? CameraPreview(_controller!)
-                    : const Center(child: CircularProgressIndicator()),
+                    : _cameraError == null
+                        ? const Center(child: CircularProgressIndicator())
+                        : Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(_cameraError!, textAlign: TextAlign.center),
+                                  const SizedBox(height: 12),
+                                  ElevatedButton(
+                                    onPressed: _initCamera,
+                                    child: const Text('Reintentar'),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
               ),
               const SizedBox(height: 30),
 
