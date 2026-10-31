@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class QrEquipoService {
-  static const String _baseUrl = 'http://18.119.123.181';
+  static const String _baseUrl = 'https://sigelab-api.duckdns.org';
 
   Future<Map<String, dynamic>> obtenerEquipoPorQr(String codigoQr) async {
     final codigo = codigoQr.trim();

@@ -1,11 +1,10 @@
-
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
 
 class DevolucionService {
   static const String _baseUrl =
-      'http://18.119.123.181/api/Devolucion';
+      'https://sigelab-api.duckdns.org/api/Devolucion';
 
   Future<List<Map<String, dynamic>>> listarPendientes({
     int? idSolicitante,
@@ -17,8 +16,7 @@ class DevolucionService {
             : {'idSolicitante': idSolicitante.toString()},
       );
 
-      final response =
-          await http.get(uri).timeout(const Duration(seconds: 15));
+      final response = await http.get(uri).timeout(const Duration(seconds: 15));
 
       if (response.statusCode != 200) {
         throw Exception(
@@ -48,14 +46,11 @@ class DevolucionService {
     }
   }
 
-  Future<Map<String, dynamic>> obtenerDetalle(
-    int idDevolucion,
-  ) async {
+  Future<Map<String, dynamic>> obtenerDetalle(int idDevolucion) async {
     try {
       final uri = Uri.parse('$_baseUrl/$idDevolucion/detalle');
 
-      final response =
-          await http.get(uri).timeout(const Duration(seconds: 15));
+      final response = await http.get(uri).timeout(const Duration(seconds: 15));
 
       if (response.statusCode != 200) {
         throw Exception(
@@ -91,9 +86,7 @@ class DevolucionService {
       }
 
       if (datos[1] is! List) {
-        throw const FormatException(
-          'La API no devolvió una lista de equipos.',
-        );
+        throw const FormatException('La API no devolvió una lista de equipos.');
       }
 
       final equipos = (datos[1] as List).map((item) {
@@ -130,9 +123,7 @@ class DevolucionService {
     }
 
     if (equipos.isEmpty) {
-      throw ArgumentError(
-        'Debes seleccionar al menos un equipo para recibir.',
-      );
+      throw ArgumentError('Debes seleccionar al menos un equipo para recibir.');
     }
 
     final ids = <int>{};
@@ -150,16 +141,12 @@ class DevolucionService {
       }
 
       if (condicion != 'BUENO' && condicion != 'DAÑADO') {
-        throw ArgumentError(
-          'La condición debe ser BUENO o DAÑADO.',
-        );
+        throw ArgumentError('La condición debe ser BUENO o DAÑADO.');
       }
     }
 
     final cuerpo = {
-      'usuarioAccionante': {
-        'idUsuario': idUsuario,
-      },
+      'usuarioAccionante': {'idUsuario': idUsuario},
       'datos': {
         'idPrestamo': idPrestamo,
         'observaciones': observaciones.trim(),
@@ -167,8 +154,7 @@ class DevolucionService {
           return {
             'idEquipo': equipo['idEquipo'],
             'condicion': equipo['condicion'],
-            'observaciones':
-                (equipo['observaciones'] ?? '').toString().trim(),
+            'observaciones': (equipo['observaciones'] ?? '').toString().trim(),
           };
         }).toList(),
       },
@@ -190,11 +176,8 @@ class DevolucionService {
 
       final contenido = utf8.decode(response.bodyBytes);
 
-      if (response.statusCode < 200 ||
-          response.statusCode >= 300) {
-        throw Exception(
-          'Error HTTP ${response.statusCode}: $contenido',
-        );
+      if (response.statusCode < 200 || response.statusCode >= 300) {
+        throw Exception('Error HTTP ${response.statusCode}: $contenido');
       }
 
       final datos = jsonDecode(contenido);
@@ -213,11 +196,9 @@ class DevolucionService {
         );
       }
 
-      if (resultado['exitoso'] != true &&
-          resultado['exitoso'] != 1) {
+      if (resultado['exitoso'] != true && resultado['exitoso'] != 1) {
         throw Exception(
-          resultado['mensaje']?.toString() ??
-              'La recepción no fue confirmada.',
+          resultado['mensaje']?.toString() ?? 'La recepción no fue confirmada.',
         );
       }
 

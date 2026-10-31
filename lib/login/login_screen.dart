@@ -1,11 +1,9 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 
 import 'auth_service.dart';
 import 'registro_screen.dart';
-import '../home/welcome_screen.dart';
-
-import 'dart:convert';
-
 import '../sesion/sesion_usuario.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -18,6 +16,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _usuarioController = TextEditingController();
   final _passwordController = TextEditingController();
+
   final AuthService _authService = AuthService();
 
   bool _cargando = false;
@@ -30,157 +29,230 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  // ============================================================
+  // INICIAR SESIÓN Y ACCEDER AL RECONOCIMIENTO FACIAL
+  // ============================================================
+
   Future<void> _hacerLogin() async {
-    String usuario = _usuarioController.text.trim();
-    String password = _passwordController.text.trim();
+    final usuario = _usuarioController.text.trim();
+    final password = _passwordController.text.trim();
+
+    // ==========================================================
+    // VALIDAR CAMPOS
+    // ==========================================================
 
     if (usuario.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Ingresa usuario y contraseña')),
+        const SnackBar(
+          content: Text('Ingresa usuario y contraseña'),
+        ),
       );
       return;
     }
 
-    setState(() => _cargando = true);
-    Map<String, dynamic> res = await _authService.iniciarSesion(
-      usuario,
-      password,
-    );
+    setState(() {
+      _cargando = true;
+    });
 
-    debugPrint('LOGIN RESPUESTA: $res');
-    debugPrint('LOGIN DATOS: ${res['datos']}');
+    Map<String, dynamic> respuesta;
 
-    debugPrint('LOGIN - Campos recibidos: ${res.keys.toList()}');
-    final datosLogin = res['datos'];
-    if (datosLogin is String) {
-      try {
-        final datosDecodificados = jsonDecode(datosLogin);
+    // ==========================================================
+    // ENVIAR CREDENCIALES A LA API
+    // ==========================================================
 
-        debugPrint(
-          'LOGIN - Tipo decodificado: ${datosDecodificados.runtimeType}',
-        );
+    try {
+      respuesta = await _authService.iniciarSesion(
+        usuario,
+        password,
+      );
+    } catch (e) {
+      if (!mounted) return;
 
-        if (datosDecodificados is Map) {
-          debugPrint(
-            'LOGIN - Campos internos: ${datosDecodificados.keys.toList()}',
-          );
-        } else if (datosDecodificados is List &&
-            datosDecodificados.isNotEmpty &&
-            datosDecodificados.first is Map) {
-          debugPrint(
-            'LOGIN - Campos internos: '
-            '${(datosDecodificados.first as Map).keys.toList()}',
-          );
-        }
-      } on FormatException {
-        debugPrint('LOGIN - datos no contiene JSON válido');
-      }
-    }
+      setState(() {
+        _cargando = false;
+      });
 
-    debugPrint('LOGIN - Tipo de datos: ${datosLogin.runtimeType}');
-
-    if (datosLogin is Map) {
-      debugPrint('LOGIN - Campos internos: ${datosLogin.keys.toList()}');
-    } else if (datosLogin is List && datosLogin.isNotEmpty) {
-      debugPrint(
-        'LOGIN - Tipo del primer elemento: ${datosLogin.first.runtimeType}',
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error al iniciar sesión: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
 
-      if (datosLogin.first is Map) {
-        debugPrint(
-          'LOGIN - Campos internos: ${(datosLogin.first as Map).keys.toList()}',
-        );
-      }
+      return;
     }
-    debugPrint(
-      'LOGIN - Respuesta sin credenciales: '
-      'idUsuario=${res['idUsuario']}, '
-      'id_usuario=${res['id_usuario']}, '
-      'rol=${res['rol']}',
-    );
 
     if (!mounted) return;
 
 setState(() => _cargando = false);
 
-    if (res['exito']) {
-      final dynamic datosRaw = res['datos'];
+    setState(() {
+      _cargando = false;
+    });
 
-      final Map<String, dynamic> datosLogin = datosRaw is String
-          ? Map<String, dynamic>.from(jsonDecode(datosRaw) as Map)
-          : Map<String, dynamic>.from(datosRaw as Map);
+    // ==========================================================
+    // COMPROBAR RESPUESTA DEL LOGIN
+    // ==========================================================
 
-      final int idUsuario = (datosLogin['id_usuario'] as num).toInt();
-
-      
-final String nombreCompleto =
-    '${datosLogin['nombre'] ?? ''} ${datosLogin['apellido'] ?? ''}'
-        .trim();
-
-final dynamic rolRaw =
-    datosLogin['id_rol'] ?? datosLogin['idRol'];
-
-final int? idRol = rolRaw is num
-    ? rolRaw.toInt()
-    : int.tryParse(rolRaw?.toString() ?? '');
-
-debugPrint('LOGIN - ID del rol: $idRol');
-
-
-
-SesionUsuario.guardar(
-  id: idUsuario,
-  nombreUsuario: datosLogin['usuario']?.toString(),
-  nombreCompleto: nombreCompleto,
-  rol: idRol,
-);
-
-debugPrint('SESIÓN GUARDADA: ID ${SesionUsuario.idUsuario}');
-debugPrint('SESIÓN GUARDADA: ROL ${SesionUsuario.idRol}');
-debugPrint(
-  '¿ES ADMINISTRADOR?: ${SesionUsuario.esAdministrador}',
-);
-
-
+    if (respuesta['exito'] != true) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(res['mensaje'] ?? '¡Bienvenido!'),
-          backgroundColor: Colors.green,
+          content: Text(
+            respuesta['mensaje']?.toString() ??
+                'Error al iniciar sesión',
+          ),
+          backgroundColor: Colors.red,
         ),
       );
 
-      // REDIRIGIR A LA PANTALLA DE BIENVENIDA
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const WelcomeScreen()),
-      );
+      return;
     }
+
+    // ==========================================================
+    // PROCESAR LOS DATOS DEL USUARIO
+    // ==========================================================
+
+    final datosRaw = respuesta['datos'];
+
+    Map<String, dynamic> datosLogin;
+
+    try {
+      if (datosRaw is String) {
+        final decoded = jsonDecode(datosRaw);
+
+        if (decoded is! Map) {
+          throw const FormatException(
+            'Los datos del usuario no tienen un formato válido.',
+          );
+        }
+
+        datosLogin = Map<String, dynamic>.from(decoded);
+      } else if (datosRaw is Map) {
+        datosLogin = Map<String, dynamic>.from(datosRaw);
+      } else {
+        throw const FormatException(
+          'No se recibieron los datos del usuario.',
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'No se pudieron procesar los datos del usuario: $e',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+
+      return;
+    }
+
+    // ==========================================================
+    // OBTENER Y VALIDAR ID DEL USUARIO
+    // ==========================================================
+
+    final idRaw = datosLogin['id_usuario'] ??
+        datosLogin['idUsuario'];
+
+    final idUsuario = idRaw is num
+        ? idRaw.toInt()
+        : int.tryParse(idRaw?.toString() ?? '');
+
+    if (idUsuario == null || idUsuario <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'No se recibió un ID de usuario válido.',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+
+      return;
+    }
+
+    // ==========================================================
+    // OBTENER INFORMACIÓN DEL USUARIO
+    // ==========================================================
+
+    final nombre = datosLogin['nombre']?.toString() ?? '';
+    final apellido = datosLogin['apellido']?.toString() ?? '';
+
+    final nombreCompleto = '$nombre $apellido'.trim();
+
+    final nombreUsuario =
+        datosLogin['usuario']?.toString() ?? nombreCompleto;
+
+    // ==========================================================
+    // GUARDAR SESIÓN DEL USUARIO
+    // ==========================================================
+
+    SesionUsuario.guardar(
+      id: idUsuario,
+      nombreUsuario: nombreUsuario,
+      nombreCompleto: nombreCompleto,
+    );
+
+    debugPrint(
+      'SESIÓN GUARDADA: ID ${SesionUsuario.idUsuario}',
+    );
+
+    // ==========================================================
+    // ACCEDER AL RECONOCIMIENTO FACIAL
+    // ==========================================================
+
+    if (!mounted) return;
+
+    Navigator.pushReplacementNamed(
+      context,
+      '/reconocimiento',
+      arguments: {
+        'idUsuario': idUsuario,
+        'esRegistro': false,
+      },
+    );
   }
+
+  // ============================================================
+  // CONSTRUIR PANTALLA
+  // ============================================================
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 32.0),
+          padding: const EdgeInsets.symmetric(
+            horizontal: 24,
+            vertical: 32,
+          ),
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
+              constraints: const BoxConstraints(
+                maxWidth: 420,
+              ),
               child: Card(
-                elevation: Theme.of(context).brightness == Brightness.dark
-                    ? 2
-                    : 4,
+                elevation:
+                    Theme.of(context).brightness == Brightness.dark
+                        ? 2
+                        : 4,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Padding(
-                  padding: const EdgeInsets.all(28.0),
+                  padding: const EdgeInsets.all(28),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      const Icon(Icons.school, size: 70, color: Colors.blue),
+                      const Icon(
+                        Icons.school,
+                        size: 70,
+                        color: Colors.blue,
+                      ),
+
                       const SizedBox(height: 12),
+
                       const Text(
                         'SIGELAB',
                         style: TextStyle(
@@ -188,7 +260,11 @@ debugPrint(
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+
                       const SizedBox(height: 28),
+
+                      // USUARIO
+
                       TextField(
                         controller: _usuarioController,
                         textInputAction: TextInputAction.next,
@@ -196,16 +272,26 @@ debugPrint(
                           labelText: 'Usuario',
                           prefixIcon: Icon(Icons.person),
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(10)),
+                            borderRadius: BorderRadius.all(
+                              Radius.circular(10),
+                            ),
                           ),
                         ),
                       ),
+
                       const SizedBox(height: 16),
+
+                      // CONTRASEÑA
+
                       TextField(
                         controller: _passwordController,
                         obscureText: _ocultarPassword,
                         textInputAction: TextInputAction.done,
-                        onSubmitted: (_) => _cargando ? null : _hacerLogin(),
+                        onSubmitted: (_) {
+                          if (!_cargando) {
+                            _hacerLogin();
+                          }
+                        },
                         decoration: InputDecoration(
                           labelText: 'Contraseña',
                           prefixIcon: const Icon(Icons.lock),
@@ -215,16 +301,25 @@ debugPrint(
                                   ? Icons.visibility
                                   : Icons.visibility_off,
                             ),
-                            onPressed: () => setState(
-                              () => _ocultarPassword = !_ocultarPassword,
-                            ),
+                            onPressed: () {
+                              setState(() {
+                                _ocultarPassword =
+                                    !_ocultarPassword;
+                              });
+                            },
                           ),
                           border: const OutlineInputBorder(
-                            borderRadius: BorderRadius.all(Radius.circular(10)),
+                            borderRadius: BorderRadius.all(
+                              Radius.circular(10),
+                            ),
                           ),
                         ),
                       ),
+
                       const SizedBox(height: 24),
+
+                      // BOTÓN INICIAR SESIÓN
+
                       SizedBox(
                         width: double.infinity,
                         height: 48,
@@ -246,20 +341,29 @@ debugPrint(
                                 )
                               : const Text(
                                   'Iniciar Sesión',
-                                  style: TextStyle(fontSize: 16),
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                  ),
                                 ),
                         ),
                       ),
+
                       const SizedBox(height: 16),
+
+                      // REGISTRO DE USUARIO
+
                       TextButton(
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const RegistroScreen(),
-                            ),
-                          );
-                        },
+                        onPressed: _cargando
+                            ? null
+                            : () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const RegistroScreen(),
+                                  ),
+                                );
+                              },
                         child: const Text(
                           '¿Es tu primera vez aquí? Regístrate',
                         ),

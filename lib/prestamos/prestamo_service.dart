@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 class PrestamoService {
-  static const String _baseUrl = 'http://18.119.123.181';
+  static const String _baseUrl = 'https://sigelab-api.duckdns.org';
 
   Future<dynamic> _consultar(Uri uri) async {
     final http.Response respuesta;
@@ -125,7 +125,7 @@ class PrestamoService {
 
     // Pendiente: confirmar la ruta POST exacta con el backend.
     // No enviar la solicitud hasta configurar ese endpoint.
-    const String rutaRegistro = '';
+const String rutaRegistro = '/api/Prestamo';
 
     if (rutaRegistro.isEmpty) {
       throw StateError(

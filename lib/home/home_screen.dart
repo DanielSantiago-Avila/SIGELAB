@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:sigelab/laboratorio/laboratorios_screen.dart';
+
+import '../equipos_inventario/equipos_inventario_screen.dart';
 import '../usuario/usuarios_screen.dart';
 
 import '../login/login_screen.dart';
@@ -48,18 +50,15 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // Rol disponible en esta pantalla.
-  // Se utiliza Usuario como valor predeterminado porque
-  // todavía no estamos recibiendo el rol desde el login.
   String get _rolActual {
     final rol = widget.rol.trim();
 
     return rol.isNotEmpty ? rol : 'Usuario';
   }
 
-  // Todas las opciones se definen una sola vez
-  // para mantener sincronizados el menú móvil y el de escritorio.
+  // Opciones del menú de navegación.
   final List<_MenuEntry> _menuItems = const [
-    _MenuEntry(index: 0, icon: Icons.grid_view_rounded, title: 'Dashboard'),
+    _MenuEntry(index: 0, icon: Icons.home_outlined, title: 'Inicio'),
     _MenuEntry(index: 1, icon: Icons.people_outline, title: 'Usuarios'),
     _MenuEntry(index: 2, icon: Icons.science_outlined, title: 'Laboratorios'),
     _MenuEntry(
@@ -70,7 +69,7 @@ class _HomeScreenState extends State<HomeScreen> {
     _MenuEntry(
       index: 4,
       icon: Icons.inventory_2_outlined,
-      title: 'Inventario y Equipos',
+      title: 'Equipos / Inventario',
     ),
     _MenuEntry(index: 5, icon: Icons.front_hand_outlined, title: 'Préstamos'),
     _MenuEntry(index: 6, icon: Icons.replay, title: 'Devoluciones'),
@@ -80,7 +79,10 @@ class _HomeScreenState extends State<HomeScreen> {
     _MenuEntry(index: 10, icon: Icons.qr_code_scanner, title: 'Escanear QR'),
   ];
 
-  // Genera las iniciales a partir del nombre del usuario.
+  // ============================================================
+  // GENERAR INICIALES DEL USUARIO
+  // ============================================================
+
   String _obtenerIniciales(String nombre) {
     final nombreLimpio = nombre.trim();
 
@@ -97,7 +99,10 @@ class _HomeScreenState extends State<HomeScreen> {
     return partes[0][0].toUpperCase();
   }
 
-  // Cierra la sesión y regresa a la pantalla de inicio de sesión.
+  // ============================================================
+  // CERRAR SESIÓN
+  // ============================================================
+
   void _cerrarSesion() {
     SesionUsuario.cerrarSesion();
 
@@ -348,7 +353,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // ============================================================
   // ELEMENTO DEL MENÚ MÓVIL
+  // ============================================================
+
   Widget _buildDrawerMenuItem(_MenuEntry item) {
     final seleccionado = _selectedIndex == item.index;
 
@@ -387,7 +395,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // ============================================================
   // ELEMENTO DEL MENÚ DE ESCRITORIO
+  // ============================================================
+
   Widget _buildMenuItem(_MenuEntry item) {
     final seleccionado = _selectedIndex == item.index;
 
@@ -423,7 +434,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // ============================================================
   // PERFIL DEL USUARIO EN EL MENÚ MÓVIL
+  // ============================================================
+
   Widget _buildMobileDrawerProfile(String iniciales) {
     return Container(
       margin: const EdgeInsets.all(12),
@@ -494,7 +508,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // ============================================================
   // PERFIL DEL USUARIO EN EL MENÚ DE ESCRITORIO
+  // ============================================================
+
   Widget _buildDesktopProfile(String iniciales) {
     return Container(
       margin: const EdgeInsets.all(12),
@@ -577,7 +594,10 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // ============================================================
   // PERFIL COMPACTO EN EL ENCABEZADO
+  // ============================================================
+
   Widget _buildHeaderProfile(String iniciales, {required bool compacto}) {
     if (compacto) {
       return Tooltip(
@@ -635,12 +655,15 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // ============================================================
   // CONTENIDO SEGÚN LA OPCIÓN SELECCIONADA
+  // ============================================================
+
   Widget _buildBodyContent() {
     switch (_selectedIndex) {
       case 0:
-        // Dashboard integrado.
-        return DashboardScreen();
+        // Inicio: conserva el Dashboard actual y su funcionalidad.
+        return const DashboardScreen();
         
       case 1:
         return const UsuariosScreen();
@@ -650,6 +673,7 @@ class _HomeScreenState extends State<HomeScreen> {
         return const LaboratoriosScreen();
 
       case 3:
+        // Pantalla de tipos de equipo existente.
         final idUsuario = SesionUsuario.idUsuario;
 
         if (idUsuario == null || idUsuario <= 0) {
@@ -659,6 +683,18 @@ class _HomeScreenState extends State<HomeScreen> {
         }
 
         return TiposEquipoScreen(idUsuarioAccionante: idUsuario);
+
+      case 4:
+        // Módulo único de Equipos / Inventario.
+        final idUsuario = SesionUsuario.idUsuario;
+
+        if (idUsuario == null || idUsuario <= 0) {
+          return const Center(
+            child: Text('No se encontró una sesión de usuario válida.'),
+          );
+        }
+
+        return EquiposInventarioScreen(idUsuarioAccionante: idUsuario);
 
       case 5:
         // Pantalla principal del módulo de préstamos.
@@ -709,11 +745,14 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  // ============================================================
   // TÍTULO DINÁMICO DE LA CABECERA
+  // ============================================================
+
   String _obtenerTitulo(int index) {
     switch (index) {
       case 0:
-        return 'Dashboard General';
+        return 'Inicio';
       case 1:
         return 'Gestión de Usuarios';
       case 2:
@@ -721,7 +760,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case 3:
         return 'Tipos de Equipo';
       case 4:
-        return 'Inventario y Equipos';
+        return 'Equipos / Inventario';
       case 5:
         return 'Préstamos de Equipos';
       case 6:
@@ -735,12 +774,15 @@ class _HomeScreenState extends State<HomeScreen> {
       case 10:
         return 'Escanear QR';
       default:
-        return 'Dashboard General';
+        return 'Inicio';
     }
   }
 }
 
-// Modelo de cada opción de navegación.
+// ============================================================
+// MODELO DE CADA OPCIÓN DE NAVEGACIÓN
+// ============================================================
+
 class _MenuEntry {
   final int index;
   final IconData icon;
