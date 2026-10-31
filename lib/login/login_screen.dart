@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'auth_service.dart';
 import 'registro_screen.dart';
-import '../home/home_screen.dart';
+import '../reconocimiento_facial/facial_recognition_service.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -38,11 +38,24 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _cargando = true);
     Map<String, dynamic> res = await _authService.iniciarSesion(usuario, password);
+    
+    if (!mounted) return;
     setState(() => _cargando = false);
 
-    if (!mounted) return;
+    if (res['exito'] == true) {
+      final idUsuario = AuthService.idUsuarioDesdeRespuesta(res);
+      if (idUsuario == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+              'No se recibió el ID del usuario; no es posible validar su rostro.',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
 
-    if (res['exito']) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(res['mensaje'] ?? '¡Bienvenido!'), 
@@ -50,28 +63,33 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
 
-      // AL VALIDAR EL USUARIO Y CONTRASEÑA CORRECTAMENTE:
+      bool tieneRostro;
+      try {
+        tieneRostro = await FacialRecognitionService().tieneBiometria(idUsuario);
+      } catch (e) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('No se pudo verificar el rostro: $e'), backgroundColor: Colors.red),
+        );
+        return;
+      }
+      if (!mounted) return;
 
       Navigator.pushReplacementNamed(
-        context, 
+        context,
         '/reconocimiento',
         arguments: {
-          'idUsuario': 1, // Aquí pasas el ID del usuario que inició sesión
-          'esRegistro': false, // false para validar rostro, true si es usuario nuevo
+          'idUsuario': idUsuario,
+          'esRegistro': !tieneRostro,
         },
       );
-// REDIRIGIR A LA PANTALLA DE INICIO (HOME)
-Navigator.pushReplacement(
-  context,
-  MaterialPageRoute(builder: (context) => const HomeScreen()),
-);
-} else {
-  ScaffoldMessenger.of(context).showSnackBar(
-    SnackBar(
-      content: Text(res['mensaje'] ?? 'Error al iniciar sesión'),
-      backgroundColor: Colors.red,
-    ),
-  );
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(res['mensaje'] ?? 'Error al iniciar sesión'),
+        backgroundColor: Colors.red,
+      ),
+    );
 }
 
 }
