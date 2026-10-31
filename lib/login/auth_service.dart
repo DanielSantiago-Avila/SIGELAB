@@ -1,53 +1,57 @@
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
 
 class AuthService {
-  final String _baseUrl = 'http://18.119.123.181/api/Auth';
+  final String _baseUrl = 'https://sigelab-api.duckdns.org/api/Auth';
 
-static int? idUsuarioDesdeRespuesta(dynamic response) {
-  const claves = {'idusuario', 'id_usuario'};
+  static int? idUsuarioDesdeRespuesta(dynamic response) {
+    const claves = {'idusuario', 'id_usuario'};
 
-  int? comoInt(dynamic v) {
-    if (v is int) return v;
-    if (v is num) return v.toInt();
-    if (v is String) return int.tryParse(v);
-    return null;
-  }
-
-  int? buscar(dynamic nodo) {
-    if (nodo is String) {
-      final t = nodo.trim();
-      if (t.startsWith('{') || t.startsWith('[')) {
-        try {
-          return buscar(jsonDecode(t));
-        } catch (_) {}
-      }
+    int? comoInt(dynamic v) {
+      if (v is int) return v;
+      if (v is num) return v.toInt();
+      if (v is String) return int.tryParse(v);
       return null;
     }
-    if (nodo is Map) {
-      for (final e in nodo.entries) {
-        if (claves.contains(e.key.toString().toLowerCase())) {
-          final id = comoInt(e.value);
+
+    int? buscar(dynamic nodo) {
+      if (nodo is String) {
+        final t = nodo.trim();
+        if (t.startsWith('{') || t.startsWith('[')) {
+          try {
+            return buscar(jsonDecode(t));
+          } catch (_) {}
+        }
+        return null;
+      }
+      if (nodo is Map) {
+        for (final e in nodo.entries) {
+          if (claves.contains(e.key.toString().toLowerCase())) {
+            final id = comoInt(e.value);
+            if (id != null) return id;
+          }
+        }
+        for (final valor in nodo.values) {
+          final id = buscar(valor);
+          if (id != null) return id;
+        }
+      } else if (nodo is List) {
+        for (final item in nodo) {
+          final id = buscar(item);
           if (id != null) return id;
         }
       }
-      for (final valor in nodo.values) {
-        final id = buscar(valor);
-        if (id != null) return id;
-      }
-    } else if (nodo is List) {
-      for (final item in nodo) {
-        final id = buscar(item);
-        if (id != null) return id;
-      }
+      return null;
     }
-    return null;
+
+    return buscar(response);
   }
 
-  return buscar(response);
-}
-
-  Future<Map<String, dynamic>> iniciarSesion(String usuario, String password) async {
+  Future<Map<String, dynamic>> iniciarSesion(
+    String usuario,
+    String password,
+  ) async {
     try {
       final response = await http.post(
         Uri.parse('$_baseUrl/login'),
@@ -58,7 +62,10 @@ static int? idUsuarioDesdeRespuesta(dynamic response) {
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       } else {
-        return {'exito': false, 'mensaje': 'Error en el servidor (${response.statusCode})'};
+        return {
+          'exito': false,
+          'mensaje': 'Error en el servidor (${response.statusCode})',
+        };
       }
     } catch (e) {
       return {'exito': false, 'mensaje': 'Error de conexión con AWS: $e'};
@@ -94,7 +101,10 @@ static int? idUsuarioDesdeRespuesta(dynamic response) {
       if (response.statusCode == 200) {
         return jsonDecode(response.body);
       } else {
-        return {'exito': false, 'mensaje': 'Error en el servidor (${response.statusCode})'};
+        return {
+          'exito': false,
+          'mensaje': 'Error en el servidor (${response.statusCode})',
+        };
       }
     } catch (e) {
       return {'exito': false, 'mensaje': 'Error de conexión con AWS: $e'};

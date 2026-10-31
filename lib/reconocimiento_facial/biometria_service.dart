@@ -1,28 +1,50 @@
 import 'dart:io';
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
 class BiometriaService {
-  final String baseUrl = 'http://18.119.123.181/api/usuario';
+  final String baseUrl = 'https://sigelab-api.duckdns.org/api/Biometria';
 
   Future<Map<String, dynamic>> registrarBiometria({
     required File imagenFile,
-    required String idUsuario,
+    required int idUsuario,
+  }) async {
+    return _enviarBiometria(
+      operacion: 'registrar',
+      imagenFile: imagenFile,
+      idUsuario: idUsuario,
+    );
+  }
+
+  Future<Map<String, dynamic>> validarBiometria({
+    required File imagenFile,
+    required int idUsuario,
+  }) async {
+    return _enviarBiometria(
+      operacion: 'validar',
+      imagenFile: imagenFile,
+      idUsuario: idUsuario,
+    );
+  }
+
+  Future<Map<String, dynamic>> _enviarBiometria({
+    required String operacion,
+    required File imagenFile,
+    required int idUsuario,
   }) async {
     try {
-      var request = http.MultipartRequest(
+      final request = http.MultipartRequest(
         'POST',
-        Uri.parse('$baseUrl/biometria/registrar'),
+        Uri.parse('$baseUrl/$operacion'),
       );
 
-      // 1. Especificar el contentType correcto según la extensión
-      String extension = imagenFile.path.split('.').last.toLowerCase();
-      MediaType mediaType = (extension == 'png')
+      final extension = imagenFile.path.split('.').last.toLowerCase();
+      final mediaType = extension == 'png'
           ? MediaType('image', 'png')
           : MediaType('image', 'jpeg');
 
-      // 2. Adjuntar el archivo con el nombre de campo 'foto' y su MimeType
       request.files.add(
         await http.MultipartFile.fromPath(
           'foto',
@@ -31,26 +53,45 @@ class BiometriaService {
         ),
       );
 
-      // 3. Enviar el ID del usuario
-      request.fields['idUsuario'] = idUsuario;
+      request.fields['idUsuario'] = idUsuario.toString();
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      final body = response.body.trim();
+      final decoded = body.isEmpty ? null : jsonDecode(body);
+      if (decoded != null && decoded is! Map) {
+        throw const FormatException(
+          'El servidor devolvió una respuesta biométrica con formato inválido.',
+        );
+      }
+      final data = decoded == null
+          ? <String, dynamic>{}
+          : Map<String, dynamic>.from(decoded as Map);
 
-      var streamedResponse = await request.send();
-      var response = await http.Response.fromStream(streamedResponse);
-
-      if (response.statusCode == 200) {
-        return jsonDecode(response.body) as Map<String, dynamic>;
-      } else {
+      if (response.statusCode < 200 || response.statusCode >= 300) {
         return {
+          ...data,
           'exito': false,
           'statusCode': response.statusCode,
-          'mensaje': 'El servidor devolvió un error (${response.statusCode}): ${response.body}',
+          'mensaje':
+              data['mensaje']?.toString() ??
+              (body.isEmpty
+                  ? 'El servidor devolvió un error (${response.statusCode}).'
+                  : body),
         };
       }
-    } catch (e) {
+
+      return {
+        ...data,
+        'statusCode': response.statusCode,
+        'exito': data['exito'] != false,
+      };
+    } on FormatException catch (e) {
       return {
         'exito': false,
-        'mensaje': 'Error de conexión HTTP: $e',
+        'mensaje': 'El servidor devolvió una respuesta inválida: $e',
       };
+    } catch (e) {
+      return {'exito': false, 'mensaje': 'No se pudo enviar la biometría: $e'};
     }
   }
 }

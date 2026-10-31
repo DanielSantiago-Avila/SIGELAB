@@ -5,7 +5,8 @@ import 'package:http/http.dart' as http;
 import 'laboratorio_model.dart';
 
 class LaboratorioService {
-  static const String _baseUrl = 'http://18.119.123.181/api/Laboratorio';
+  static const String _baseUrl =
+      'https://sigelab-api.duckdns.org/api/Laboratorio';
 
   static const Duration _timeout = Duration(seconds: 20);
 

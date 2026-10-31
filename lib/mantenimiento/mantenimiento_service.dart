@@ -5,7 +5,7 @@ import 'package:http/http.dart' as http;
 import 'mantenimiento_model.dart';
 
 class MantenimientoService {
-  static const String _baseUrl = 'http://18.119.123.181';
+  static const String _baseUrl = 'https://sigelab-api.duckdns.org';
 
   static const Duration _tiempoEspera = Duration(seconds: 20);
 

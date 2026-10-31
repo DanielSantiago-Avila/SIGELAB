@@ -1,10 +1,9 @@
-import 'dart:convert';
-import 'dart:typed_data';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
-import 'facial_recognition_service.dart';
+
 import 'biometria_service.dart';
-import 'dart:io';
 
 class FacialRecognitionScreen extends StatefulWidget {
   final int idUsuario;
@@ -12,14 +11,15 @@ class FacialRecognitionScreen extends StatefulWidget {
   final VoidCallback onSuccess;
 
   const FacialRecognitionScreen({
-    Key? key,
+    super.key,
     required this.idUsuario,
     this.esRegistro = false,
     required this.onSuccess,
-  }) : super(key: key);
+  });
 
   @override
-  State<FacialRecognitionScreen> createState() => _FacialRecognitionScreenState();
+  State<FacialRecognitionScreen> createState() =>
+      _FacialRecognitionScreenState();
 }
 
 class _FacialRecognitionScreenState extends State<FacialRecognitionScreen> {
@@ -28,11 +28,7 @@ class _FacialRecognitionScreenState extends State<FacialRecognitionScreen> {
   bool _isCameraInitialized = false;
   bool _cargando = false;
   String? _cameraError;
-  
-  final FacialRecognitionService _service =
-      FacialRecognitionService(baseUrl: 'http://18.119.123.181', usarSimulacion: false);
   final BiometriaService _biometriaService = BiometriaService();
-
   @override
   void initState() {
     super.initState();
@@ -74,7 +70,9 @@ class _FacialRecognitionScreenState extends State<FacialRecognitionScreen> {
   }
 
   Future<void> _procesarRostro() async {
-    if (_controller == null || !_controller!.value.isInitialized || _cargando) return;
+    if (_controller == null || !_controller!.value.isInitialized || _cargando) {
+      return;
+    }
 
     setState(() => _cargando = true);
 
@@ -83,42 +81,72 @@ class _FacialRecognitionScreenState extends State<FacialRecognitionScreen> {
         await _controller!.stopImageStream();
       }
 
-      // 1. Tomar la fotografía desde la cámara
       final XFile photo = await _controller!.takePicture();
-      final File imagenFile = File(photo.path);
-
+      final imagenFile = File(photo.path);
       Map<String, dynamic> respuesta;
+      var fueRegistro = widget.esRegistro;
 
-      // 2. Si es registro, enviamos el archivo File con Multipart mediante BiometriaService
       if (widget.esRegistro) {
         respuesta = await _biometriaService.registrarBiometria(
           imagenFile: imagenFile,
-          idUsuario: widget.idUsuario.toString(),
+          idUsuario: widget.idUsuario,
         );
       } else {
-        // En caso de validación, se procesa con el servicio correspondiente
-        final Uint8List bytes = await photo.readAsBytes();
-        final base64Image = base64Encode(bytes);
-        final bool exito = await _service.validarRostro(
+        respuesta = await _biometriaService.validarBiometria(
+          imagenFile: imagenFile,
           idUsuario: widget.idUsuario,
-          imagenBase64: base64Image,
         );
-        respuesta = {'exito': exito};
+
+        if (respuesta['requiere_registro'] == true && mounted) {
+          final registrar =
+              await showDialog<bool>(
+                context: context,
+                builder: (context) => AlertDialog(
+                  title: const Text('Rostro sin registrar'),
+                  content: Text(
+                    '${respuesta['mensaje'] ?? 'No hay un rostro asociado a esta cuenta.'} '
+                    '¿Quieres registrar ahora la foto capturada?',
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(context, false),
+                      child: const Text('Ahora no'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context, true),
+                      child: const Text('Registrar rostro'),
+                    ),
+                  ],
+                ),
+              ) ??
+              false;
+
+          if (!mounted) return;
+          if (registrar) {
+            fueRegistro = true;
+            respuesta = await _biometriaService.registrarBiometria(
+              imagenFile: imagenFile,
+              idUsuario: widget.idUsuario,
+            );
+          }
+        }
       }
+
+      final resultado =
+          respuesta['exito'] == true &&
+          (fueRegistro || respuesta['es_valido'] == true);
 
       if (!mounted) return;
       setState(() => _cargando = false);
 
-      final bool fueExitoso = respuesta['exito'] == true || respuesta['statusCode'] == 200;
-
-      if (fueExitoso) {
+      if (resultado) {
         await showDialog(
           context: context,
           barrierDismissible: false,
           builder: (context) => AlertDialog(
             title: const Text('Éxito', textAlign: TextAlign.center),
             content: Text(
-              widget.esRegistro
+              fueRegistro
                   ? 'Su rostro ha sido registrado correctamente en el sistema.'
                   : 'Rostro reconocido con éxito. ¡Bienvenido al sistema!',
               textAlign: TextAlign.center,
@@ -126,25 +154,32 @@ class _FacialRecognitionScreenState extends State<FacialRecognitionScreen> {
             actions: [
               Center(
                 child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                  ),
                   onPressed: () {
                     Navigator.of(context).pop();
                     widget.onSuccess();
                   },
-                  child: const Text('Continuar al Home', style: TextStyle(color: Colors.white)),
+                  child: const Text(
+                    'Continuar al Home',
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
               ),
             ],
           ),
         );
       } else {
-        final mensajeError = respuesta['mensaje'] ?? 
-            (widget.esRegistro
-                ? 'El servidor no confirmó el registro biométrico.'
-                : 'Reconocimiento facial no coincide. Acceso denegado.');
-
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(mensajeError)),
+          SnackBar(
+            content: Text(
+              respuesta['mensaje']?.toString() ??
+                  (fueRegistro
+                      ? 'El servidor no confirmó el registro biométrico.'
+                      : 'Reconocimiento facial no coincide. Acceso denegado.'),
+            ),
+          ),
         );
       }
     } catch (e) {
@@ -166,7 +201,9 @@ class _FacialRecognitionScreenState extends State<FacialRecognitionScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(widget.esRegistro ? 'Registro Biométrico' : 'Validación Biométrica'),
+        title: Text(
+          widget.esRegistro ? 'Registro Biométrico' : 'Validación Biométrica',
+        ),
       ),
       body: Center(
         child: SingleChildScrollView(
@@ -177,12 +214,15 @@ class _FacialRecognitionScreenState extends State<FacialRecognitionScreen> {
                 widget.esRegistro
                     ? 'Posicione su rostro frente a la cámara para registrarlo'
                     : 'Alinee su rostro en el recuadro para validar su ingreso',
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 20),
-              
-              // Recuadro con el preview de la cámara en vivo
+
+              // Círculo/Recuadro con el preview de la cámara en vivo
               Container(
                 width: 280,
                 height: 350,
@@ -194,23 +234,23 @@ class _FacialRecognitionScreenState extends State<FacialRecognitionScreen> {
                 child: _isCameraInitialized
                     ? CameraPreview(_controller!)
                     : _cameraError == null
-                        ? const Center(child: CircularProgressIndicator())
-                        : Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(_cameraError!, textAlign: TextAlign.center),
-                                  const SizedBox(height: 12),
-                                  ElevatedButton(
-                                    onPressed: _initCamera,
-                                    child: const Text('Reintentar'),
-                                  ),
-                                ],
+                    ? const Center(child: CircularProgressIndicator())
+                    : Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(_cameraError!, textAlign: TextAlign.center),
+                              const SizedBox(height: 12),
+                              ElevatedButton(
+                                onPressed: _initCamera,
+                                child: const Text('Reintentar'),
                               ),
-                            ),
+                            ],
                           ),
+                        ),
+                      ),
               ),
               const SizedBox(height: 30),
 
@@ -220,10 +260,15 @@ class _FacialRecognitionScreenState extends State<FacialRecognitionScreen> {
                       onPressed: _isCameraInitialized ? _procesarRostro : null,
                       icon: const Icon(Icons.face),
                       label: Text(
-                        widget.esRegistro ? 'Guardar Biometría' : 'Validar Identidad',
+                        widget.esRegistro
+                            ? 'Guardar Biometría'
+                            : 'Validar Identidad',
                       ),
                       style: ElevatedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 12,
+                        ),
                       ),
                     ),
             ],
