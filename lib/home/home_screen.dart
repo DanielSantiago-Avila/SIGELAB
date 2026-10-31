@@ -51,9 +51,22 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // Rol disponible en esta pantalla.
   String get _rolActual {
-    final rol = widget.rol.trim();
+    final nombreRol = SesionUsuario.nombreRol?.trim() ?? '';
 
-    return rol.isNotEmpty ? rol : 'Usuario';
+    if (nombreRol.isNotEmpty) {
+      return nombreRol.toUpperCase();
+    }
+
+    switch (SesionUsuario.idRol) {
+      case 1:
+        return 'ADMIN';
+      case 2:
+        return 'ENCARGADO';
+      case 3:
+        return 'SOLICITANTE';
+      default:
+        return widget.rol.trim().toUpperCase();
+    }
   }
 
   // Opciones del menú de navegación.
@@ -74,8 +87,8 @@ class _HomeScreenState extends State<HomeScreen> {
     _MenuEntry(index: 5, icon: Icons.front_hand_outlined, title: 'Préstamos'),
     _MenuEntry(index: 6, icon: Icons.replay, title: 'Devoluciones'),
     _MenuEntry(index: 7, icon: Icons.build_outlined, title: 'Mantenimiento'),
-    _MenuEntry(index: 8, icon: Icons.bar_chart_outlined, title: 'Reportes'),
-    _MenuEntry(index: 9, icon: Icons.fact_check_outlined, title: 'Auditoría'),
+    // _MenuEntry(index: 8, icon: Icons.bar_chart_outlined, title: 'Reportes'),
+    // _MenuEntry(index: 9, icon: Icons.fact_check_outlined, title: 'Auditoría'),
     _MenuEntry(index: 10, icon: Icons.qr_code_scanner, title: 'Escanear QR'),
   ];
 
@@ -664,7 +677,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case 0:
         // Inicio: conserva el Dashboard actual y su funcionalidad.
         return const DashboardScreen();
-        
+
       case 1:
         return const UsuariosScreen();
 
