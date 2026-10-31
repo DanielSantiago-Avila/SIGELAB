@@ -20,22 +20,68 @@ class Laboratorio {
   factory Laboratorio.fromJson(Map<String, dynamic> json) {
     return Laboratorio(
       idLaboratorio: _convertirEntero(
-        json['idLaboratorio'] ?? json['id_laboratorio'],
+        _obtenerValor(json, [
+          'idLaboratorio',
+          'id_laboratorio',
+          'IdLaboratorio',
+          'ID_LABORATORIO',
+        ]),
       ),
-      codigo: _convertirTexto(json['codigo']),
-      nombre: _convertirTexto(json['nombre']),
-      ubicacion: _convertirTexto(json['ubicacion']),
-      descripcion: _convertirTexto(json['descripcion']),
-      activo: _convertirBooleano(json['activo']),
-      capacidad: _convertirEntero(json['capacidad']),
+      codigo: _convertirTexto(
+        _obtenerValor(json, ['codigo', 'Codigo', 'Código']),
+      ),
+      nombre: _convertirTexto(
+        _obtenerValor(json, ['nombre', 'Nombre']),
+      ),
+      ubicacion: _convertirTexto(
+        _obtenerValor(json, ['ubicacion', 'Ubicacion', 'Ubicación']),
+      ),
+      descripcion: _convertirTexto(
+        _obtenerValor(json, ['descripcion', 'Descripcion', 'Descripción']),
+      ),
+      activo: _convertirBooleano(
+        _obtenerValor(json, ['activo', 'Activo']),
+      ),
+      capacidad: _convertirEntero(
+        _obtenerValor(json, ['capacidad', 'Capacidad']),
+      ),
     );
   }
+
+  // ============================================================
+  // OBTENER VALORES CON DISTINTOS NOMBRES DE PROPIEDADES
+  // ============================================================
+
+  static dynamic _obtenerValor(
+    Map<String, dynamic> json,
+    List<String> posiblesClaves,
+  ) {
+    for (final clave in posiblesClaves) {
+      if (json.containsKey(clave)) {
+        return json[clave];
+      }
+    }
+
+    return null;
+  }
+
+  // ============================================================
+  // CONVERTIR TEXTO
+  // ============================================================
 
   static String _convertirTexto(dynamic valor) {
     return valor?.toString().trim() ?? '';
   }
 
+  // ============================================================
+  // CONVERTIR NÚMEROS ENTEROS
+  // ============================================================
+
   static int _convertirEntero(dynamic valor) {
+    if (valor == null) {
+      return 0;
+    }
+
     if (valor is int) {
       return valor;
     }
@@ -44,8 +90,16 @@ class Laboratorio {
       return valor.toInt();
     }
 
-    return int.tryParse(valor?.toString() ?? '') ?? 0;
+    final texto = valor.toString().trim();
+
+    return int.tryParse(texto) ??
+        double.tryParse(texto)?.toInt() ??
+        0;
   }
+
+  // ============================================================
+  // CONVERTIR ESTADO BOOLEANO
+  // ============================================================
 
   static bool? _convertirBooleano(dynamic valor) {
     if (valor == null) {
@@ -62,14 +116,22 @@ class Laboratorio {
 
     final texto = valor.toString().trim().toLowerCase();
 
-    if (texto == 'true' || texto == '1') {
-      return true;
-    }
+    switch (texto) {
+      case 'true':
+      case '1':
+      case 'activo':
+      case 'sí':
+      case 'si':
+        return true;
 
-    if (texto == 'false' || texto == '0') {
-      return false;
-    }
+      case 'false':
+      case '0':
+      case 'inactivo':
+      case 'no':
+        return false;
 
-    return null;
+      default:
+        return null;
+    }
   }
 }

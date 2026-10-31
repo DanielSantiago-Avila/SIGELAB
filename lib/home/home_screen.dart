@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:sigelab/laboratorio/laboratorios_screen.dart';
+import '../equipos_inventario/equipos_inventario_screen.dart';
 
 import '../login/login_screen.dart';
 import '../mantenimiento/mantenimiento_screen.dart';
@@ -16,7 +17,11 @@ class HomeScreen extends StatefulWidget {
   final String nombreUsuario;
   final String rol;
 
-  const HomeScreen({super.key, this.nombreUsuario = '', this.rol = 'Usuario'});
+  const HomeScreen({
+    super.key,
+    this.nombreUsuario = '',
+    this.rol = 'Usuario',
+  });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
@@ -47,20 +52,29 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // Rol disponible en esta pantalla.
-  // Se utiliza Usuario como valor predeterminado porque
-  // todavía no estamos recibiendo el rol desde el login.
   String get _rolActual {
     final rol = widget.rol.trim();
 
     return rol.isNotEmpty ? rol : 'Usuario';
   }
 
-  // Todas las opciones se definen una sola vez
-  // para mantener sincronizados el menú móvil y el de escritorio.
+  // Opciones del menú de navegación.
   final List<_MenuEntry> _menuItems = const [
-    _MenuEntry(index: 0, icon: Icons.grid_view_rounded, title: 'Dashboard'),
-    _MenuEntry(index: 1, icon: Icons.people_outline, title: 'Usuarios'),
-    _MenuEntry(index: 2, icon: Icons.science_outlined, title: 'Laboratorios'),
+    _MenuEntry(
+      index: 0,
+      icon: Icons.home_outlined,
+      title: 'Inicio',
+    ),
+    _MenuEntry(
+      index: 1,
+      icon: Icons.people_outline,
+      title: 'Usuarios',
+    ),
+    _MenuEntry(
+      index: 2,
+      icon: Icons.science_outlined,
+      title: 'Laboratorios',
+    ),
     _MenuEntry(
       index: 3,
       icon: Icons.devices_outlined,
@@ -69,14 +83,38 @@ class _HomeScreenState extends State<HomeScreen> {
     _MenuEntry(
       index: 4,
       icon: Icons.inventory_2_outlined,
-      title: 'Inventario y Equipos',
+      title: 'Equipos / Inventario',
     ),
-    _MenuEntry(index: 5, icon: Icons.front_hand_outlined, title: 'Préstamos'),
-    _MenuEntry(index: 6, icon: Icons.replay, title: 'Devoluciones'),
-    _MenuEntry(index: 7, icon: Icons.build_outlined, title: 'Mantenimiento'),
-    _MenuEntry(index: 8, icon: Icons.bar_chart_outlined, title: 'Reportes'),
-    _MenuEntry(index: 9, icon: Icons.fact_check_outlined, title: 'Auditoría'),
-    _MenuEntry(index: 10, icon: Icons.qr_code_scanner, title: 'Escanear QR'),
+    _MenuEntry(
+      index: 5,
+      icon: Icons.front_hand_outlined,
+      title: 'Préstamos',
+    ),
+    _MenuEntry(
+      index: 6,
+      icon: Icons.replay,
+      title: 'Devoluciones',
+    ),
+    _MenuEntry(
+      index: 7,
+      icon: Icons.build_outlined,
+      title: 'Mantenimiento',
+    ),
+    _MenuEntry(
+      index: 8,
+      icon: Icons.bar_chart_outlined,
+      title: 'Reportes',
+    ),
+    _MenuEntry(
+      index: 9,
+      icon: Icons.fact_check_outlined,
+      title: 'Auditoría',
+    ),
+    _MenuEntry(
+      index: 10,
+      icon: Icons.qr_code_scanner,
+      title: 'Escanear QR',
+    ),
   ];
 
   // Genera las iniciales a partir del nombre del usuario.
@@ -102,7 +140,9 @@ class _HomeScreenState extends State<HomeScreen> {
 
     Navigator.pushAndRemoveUntil(
       context,
-      MaterialPageRoute(builder: (context) => const LoginScreen()),
+      MaterialPageRoute(
+        builder: (context) => const LoginScreen(),
+      ),
       (route) => false,
     );
   }
@@ -177,7 +217,9 @@ class _HomeScreenState extends State<HomeScreen> {
                     Expanded(
                       child: ListView(
                         padding: const EdgeInsets.symmetric(horizontal: 12),
-                        children: [..._menuItems.map(_buildDrawerMenuItem)],
+                        children: [
+                          ..._menuItems.map(_buildDrawerMenuItem),
+                        ],
                       ),
                     ),
 
@@ -337,7 +379,9 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
 
                   // PANTALLA SELECCIONADA
-                  Expanded(child: _buildBodyContent()),
+                  Expanded(
+                    child: _buildBodyContent(),
+                  ),
                 ],
               ),
             ),
@@ -354,8 +398,12 @@ class _HomeScreenState extends State<HomeScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Material(
-        color: seleccionado ? const Color(0xFFE8F0FB) : Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        color: seleccionado
+            ? const Color(0xFFE8F0FB)
+            : Colors.transparent,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
         clipBehavior: Clip.antiAlias,
         child: ListTile(
           selected: seleccionado,
@@ -369,11 +417,15 @@ class _HomeScreenState extends State<HomeScreen> {
             item.title,
             style: TextStyle(
               color: seleccionado ? primaryDark : Colors.black87,
-              fontWeight: seleccionado ? FontWeight.w600 : FontWeight.normal,
+              fontWeight: seleccionado
+                  ? FontWeight.w600
+                  : FontWeight.normal,
               fontSize: 14,
             ),
           ),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
           onTap: () {
             setState(() {
               _selectedIndex = item.index;
@@ -394,7 +446,9 @@ class _HomeScreenState extends State<HomeScreen> {
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Material(
         color: seleccionado ? primaryDark : Colors.transparent,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(8),
+        ),
         clipBehavior: Clip.antiAlias,
         child: ListTile(
           dense: true,
@@ -407,11 +461,15 @@ class _HomeScreenState extends State<HomeScreen> {
             item.title,
             style: TextStyle(
               color: seleccionado ? Colors.white : Colors.black87,
-              fontWeight: seleccionado ? FontWeight.w600 : FontWeight.normal,
+              fontWeight: seleccionado
+                  ? FontWeight.w600
+                  : FontWeight.normal,
               fontSize: 13,
             ),
           ),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
           onTap: () {
             setState(() {
               _selectedIndex = item.index;
@@ -559,11 +617,18 @@ class _HomeScreenState extends State<HomeScreen> {
                   padding: EdgeInsets.symmetric(vertical: 4),
                   child: Row(
                     children: [
-                      Icon(Icons.logout, size: 18, color: Colors.grey),
+                      Icon(
+                        Icons.logout,
+                        size: 18,
+                        color: Colors.grey,
+                      ),
                       SizedBox(width: 8),
                       Text(
                         'Cerrar sesión',
-                        style: TextStyle(fontSize: 13, color: Colors.grey),
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey,
+                        ),
                       ),
                     ],
                   ),
@@ -577,7 +642,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   // PERFIL COMPACTO EN EL ENCABEZADO
-  Widget _buildHeaderProfile(String iniciales, {required bool compacto}) {
+  Widget _buildHeaderProfile(
+    String iniciales, {
+    required bool compacto,
+  }) {
     if (compacto) {
       return Tooltip(
         message: '$_nombreUsuarioActual · $_rolActual',
@@ -597,7 +665,10 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: 10,
+        vertical: 6,
+      ),
       decoration: BoxDecoration(
         color: const Color(0xFFF1F5F9),
         borderRadius: BorderRadius.circular(20),
@@ -605,7 +676,11 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(Icons.person_outline, size: 18, color: Colors.black54),
+          const Icon(
+            Icons.person_outline,
+            size: 18,
+            color: Colors.black54,
+          ),
           const SizedBox(width: 8),
           ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 150),
@@ -613,7 +688,10 @@ class _HomeScreenState extends State<HomeScreen> {
               '$_nombreUsuarioActual · $_rolActual',
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w500),
+              style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
           const SizedBox(width: 8),
@@ -638,23 +716,44 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildBodyContent() {
     switch (_selectedIndex) {
       case 0:
-        // Dashboard integrado.
-        return DashboardScreen();
+        // Inicio: conserva el Dashboard actual y su funcionalidad.
+        return const DashboardScreen();
 
       case 2:
         // Pantalla de laboratorios existente.
         return const LaboratoriosScreen();
 
       case 3:
+        // Pantalla de tipos de equipo existente.
         final idUsuario = SesionUsuario.idUsuario;
 
         if (idUsuario == null || idUsuario <= 0) {
           return const Center(
-            child: Text('No se encontró una sesión de usuario válida.'),
+            child: Text(
+              'No se encontró una sesión de usuario válida.',
+            ),
           );
         }
 
-        return TiposEquipoScreen(idUsuarioAccionante: idUsuario);
+        return TiposEquipoScreen(
+          idUsuarioAccionante: idUsuario,
+        );
+
+      case 4:
+        // Módulo único de Equipos / Inventario.
+        final idUsuario = SesionUsuario.idUsuario;
+
+        if (idUsuario == null || idUsuario <= 0) {
+          return const Center(
+            child: Text(
+              'No se encontró una sesión de usuario válida.',
+            ),
+          );
+        }
+
+        return EquiposInventarioScreen(
+          idUsuarioAccionante: idUsuario,
+        );
 
       case 5:
         // Pantalla principal del módulo de préstamos.
@@ -681,7 +780,11 @@ class _HomeScreenState extends State<HomeScreen> {
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.construction_outlined, size: 70, color: primaryDark),
+                Icon(
+                  Icons.construction_outlined,
+                  size: 70,
+                  color: primaryDark,
+                ),
                 const SizedBox(height: 16),
                 Text(
                   _obtenerTitulo(_selectedIndex),
@@ -696,7 +799,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 const Text(
                   'Este módulo está pendiente de desarrollo.',
                   textAlign: TextAlign.center,
-                  style: TextStyle(color: Colors.grey, fontSize: 14),
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 14,
+                  ),
                 ),
               ],
             ),
@@ -709,7 +815,7 @@ class _HomeScreenState extends State<HomeScreen> {
   String _obtenerTitulo(int index) {
     switch (index) {
       case 0:
-        return 'Dashboard General';
+        return 'Inicio';
       case 1:
         return 'Gestión de Usuarios';
       case 2:
@@ -717,7 +823,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case 3:
         return 'Tipos de Equipo';
       case 4:
-        return 'Inventario y Equipos';
+        return 'Equipos / Inventario';
       case 5:
         return 'Préstamos de Equipos';
       case 6:
@@ -731,7 +837,7 @@ class _HomeScreenState extends State<HomeScreen> {
       case 10:
         return 'Escanear QR';
       default:
-        return 'Dashboard General';
+        return 'Inicio';
     }
   }
 }

@@ -1,16 +1,20 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
 import 'laboratorio_model.dart';
 
 class LaboratorioService {
-  static const String _baseUrl = 'http://18.119.123.181/api/Laboratorio';
+  static const String _baseUrl =
+      'http://18.119.123.181/api/Laboratorio';
 
-  static const Duration _timeout = Duration(seconds: 20);
+  // Se amplía el tiempo de espera de 20 a 60 segundos.
+  static const Duration _timeout = Duration(seconds: 60);
 
   // ============================================================
-  // MÉTODO: INTERPRETAR RESPUESTAS
+  // DECODIFICAR RESPUESTAS
   // ============================================================
 
   dynamic _decodificarRespuesta(http.Response response) {
@@ -27,19 +31,42 @@ class LaboratorioService {
     }
   }
 
+  // ============================================================
+  // OBTENER MENSAJES DE ERROR
+  // ============================================================
+
   String _obtenerMensajeError(dynamic datos, String alternativo) {
     if (datos is Map) {
-      return datos['mensaje']?.toString() ??
-          datos['message']?.toString() ??
-          alternativo;
+      const claves = [
+        'mensaje',
+        'Mensaje',
+        'message',
+        'Message',
+        'detail',
+        'Detail',
+        'title',
+        'Title',
+      ];
+
+      for (final clave in claves) {
+        final valor = datos[clave];
+
+        if (valor != null && valor.toString().trim().isNotEmpty) {
+          return valor.toString();
+        }
+      }
     }
 
-    if (datos is String && datos.isNotEmpty) {
+    if (datos is String && datos.trim().isNotEmpty) {
       return datos;
     }
 
     return alternativo;
   }
+
+  // ============================================================
+  // VALIDAR RESPUESTAS HTTP
+  // ============================================================
 
   void _validarRespuesta(http.Response response) {
     final datos = _decodificarRespuesta(response);
@@ -48,34 +75,50 @@ class LaboratorioService {
       throw Exception(
         _obtenerMensajeError(
           datos,
-          'Error HTTP ${response.statusCode} al comunicarse con Laboratorios.',
+          'Error HTTP ${response.statusCode}.',
         ),
       );
     }
 
-    if (datos is Map && datos['exito'] == false) {
-      throw Exception(
-        _obtenerMensajeError(datos, 'La API no pudo completar la operación.'),
-      );
+    if (datos is Map) {
+      final exito = datos['exito'] ?? datos['Exito'];
+
+      if (exito == false) {
+        throw Exception(
+          _obtenerMensajeError(
+            datos,
+            'La API no pudo completar la operación.',
+          ),
+        );
+      }
     }
   }
 
   // ============================================================
-  // MÉTODO: EXTRAER LISTA DE LABORATORIOS
+  // EXTRAER LISTAS DE LAS RESPUESTAS
   // ============================================================
 
   List<dynamic> _extraerLista(dynamic datos) {
     dynamic contenido = datos;
 
-    // Permite recibir tanto una lista directa como una lista
-    // dentro de un objeto de respuesta.
-    for (int intento = 0; intento < 4; intento++) {
+    for (int intento = 0; intento < 6; intento++) {
       if (contenido is List) {
         return contenido;
       }
 
+      if (contenido is String) {
+        try {
+          contenido = jsonDecode(contenido);
+          continue;
+        } on FormatException {
+          break;
+        }
+      }
+
       if (contenido is Map) {
-        if (contenido['exito'] == false) {
+        final exito = contenido['exito'] ?? contenido['Exito'];
+
+        if (exito == false) {
           throw Exception(
             _obtenerMensajeError(
               contenido,
@@ -84,28 +127,32 @@ class LaboratorioService {
           );
         }
 
-        if (contenido.containsKey('value')) {
-          contenido = contenido['value'];
-          continue;
+        const claves = [
+          'value',
+          'Value',
+          'datos',
+          'Datos',
+          'data',
+          'Data',
+          'items',
+          'Items',
+          'resultado',
+          'Resultado',
+          'result',
+          'Result',
+        ];
+
+        bool encontrado = false;
+
+        for (final clave in claves) {
+          if (contenido.containsKey(clave)) {
+            contenido = contenido[clave];
+            encontrado = true;
+            break;
+          }
         }
 
-        if (contenido.containsKey('Value')) {
-          contenido = contenido['Value'];
-          continue;
-        }
-
-        if (contenido.containsKey('datos')) {
-          contenido = contenido['datos'];
-          continue;
-        }
-
-        if (contenido.containsKey('data')) {
-          contenido = contenido['data'];
-          continue;
-        }
-
-        if (contenido.containsKey('items')) {
-          contenido = contenido['items'];
+        if (encontrado) {
           continue;
         }
       }
@@ -119,13 +166,21 @@ class LaboratorioService {
   }
 
   // ============================================================
-  // MÉTODO: CONSULTAR LABORATORIOS
-  // GET /api/Laboratorio
+  // CONSULTAR LABORATORIOS
   // ============================================================
 
-  Future<List<Laboratorio>> obtenerLaboratorios() async {
+  Future<List<Laboratorio>> _consultarLista(String endpoint) async {
+    final uri = Uri.parse('$_baseUrl$endpoint');
+
     try {
-      final response = await http.get(Uri.parse(_baseUrl)).timeout(_timeout);
+      final response = await http
+          .get(
+            uri,
+            headers: {
+              'Accept': 'application/json',
+            },
+          )
+          .timeout(_timeout);
 
       _validarRespuesta(response);
 
@@ -139,17 +194,55 @@ class LaboratorioService {
           );
         }
 
-        return Laboratorio.fromJson(Map<String, dynamic>.from(item));
+        return Laboratorio.fromJson(
+          Map<String, dynamic>.from(item),
+        );
       }).toList();
-    } on Exception {
-      rethrow;
+    } on TimeoutException {
+      throw Exception(
+        'La consulta de laboratorios superó los 60 segundos. '
+        'Comprueba la conexión con el servidor.',
+      );
+    } on SocketException {
+      throw Exception(
+        'No fue posible conectar con el servidor de laboratorios.',
+      );
     } catch (error) {
-      throw Exception('Error al consultar laboratorios: $error');
+      throw Exception(
+        'Error al consultar laboratorios: $error',
+      );
     }
   }
 
   // ============================================================
-  // MÉTODO: ENVIAR SOLICITUDES POST, PUT Y PATCH
+  // GET: LISTAR TODOS LOS LABORATORIOS
+  // GET /api/Laboratorio
+  // ============================================================
+
+  Future<List<Laboratorio>> obtenerLaboratorios() {
+    return _consultarLista('');
+  }
+
+  // ============================================================
+  // GET: LABORATORIOS ACTIVOS
+  // GET /api/Laboratorio/activos-combo
+  // ============================================================
+
+  Future<List<Laboratorio>> obtenerLaboratoriosActivosCombo() {
+    return _consultarLista('/activos-combo');
+  }
+
+  // ============================================================
+  // GET: LABORATORIOS PARA EQUIPOS
+  // GET /api/Laboratorio/equipos-combo
+  // ============================================================
+
+  Future<List<Laboratorio>> obtenerLaboratoriosEquiposCombo() {
+    return _consultarLista('/equipos-combo');
+  }
+
+  // ============================================================
+  // ENVIAR SOLICITUDES POST, PUT Y PATCH
   // ============================================================
 
   Future<void> _enviarSolicitud({
@@ -157,49 +250,70 @@ class LaboratorioService {
     required Uri uri,
     required Map<String, dynamic> body,
   }) async {
+    final headers = {
+      'Content-Type': 'application/json; charset=UTF-8',
+      'Accept': 'application/json',
+    };
+
+    final contenido = jsonEncode(body);
+
     try {
-      final headers = {
-        'Content-Type': 'application/json; charset=UTF-8',
-        'Accept': 'application/json',
-      };
-
-      final contenido = jsonEncode(body);
-
       late http.Response response;
 
       switch (metodo) {
         case 'POST':
           response = await http
-              .post(uri, headers: headers, body: contenido)
+              .post(
+                uri,
+                headers: headers,
+                body: contenido,
+              )
               .timeout(_timeout);
           break;
 
         case 'PUT':
           response = await http
-              .put(uri, headers: headers, body: contenido)
+              .put(
+                uri,
+                headers: headers,
+                body: contenido,
+              )
               .timeout(_timeout);
           break;
 
         case 'PATCH':
           response = await http
-              .patch(uri, headers: headers, body: contenido)
+              .patch(
+                uri,
+                headers: headers,
+                body: contenido,
+              )
               .timeout(_timeout);
           break;
 
         default:
-          throw ArgumentError('Método HTTP no permitido: $metodo');
+          throw ArgumentError(
+            'Método HTTP no permitido: $metodo',
+          );
       }
 
       _validarRespuesta(response);
-    } on Exception {
-      rethrow;
-    } catch (error) {
-      throw Exception('Error al enviar la solicitud a Laboratorios: $error');
+    } on TimeoutException {
+      throw Exception(
+        'La solicitud $metodo superó los 60 segundos. '
+        'No se pudo confirmar el resultado en el servidor. '
+        'Comprueba el registro antes de volver a enviar la operación.',
+      );
+    } on SocketException {
+      throw Exception(
+        'No fue posible conectar con el servidor. '
+        'Comprueba tu conexión a Internet.',
+      );
     }
   }
 
   // ============================================================
-  // MÉTODO: CREAR LABORATORIO
+  // POST: CREAR LABORATORIO
   // POST /api/Laboratorio
   // ============================================================
 
@@ -212,11 +326,15 @@ class LaboratorioService {
     required int capacidad,
   }) async {
     if (idUsuarioAccionante <= 0) {
-      throw Exception('No se encontró un usuario autenticado válido.');
+      throw Exception(
+        'No se encontró un usuario autenticado válido.',
+      );
     }
 
     final body = {
-      'usuarioAccionante': {'idUsuario': idUsuarioAccionante},
+      'usuarioAccionante': {
+        'idUsuario': idUsuarioAccionante,
+      },
       'datos': {
         'codigo': codigo,
         'nombre': nombre,
@@ -234,7 +352,7 @@ class LaboratorioService {
   }
 
   // ============================================================
-  // MÉTODO: ACTUALIZAR LABORATORIO
+  // PUT: ACTUALIZAR LABORATORIO
   // PUT /api/Laboratorio
   // ============================================================
 
@@ -244,40 +362,68 @@ class LaboratorioService {
     required String nombre,
     required String ubicacion,
     required int capacidad,
+    String? codigo,
+    String? descripcion,
   }) async {
     if (idUsuarioAccionante <= 0 || idLaboratorio <= 0) {
       throw Exception(
-        'Los identificadores del usuario o laboratorio son inválidos.',
+        'Los identificadores son inválidos.',
       );
     }
 
-    final body = {
-      'usuarioAccionante': {'idUsuario': idUsuarioAccionante},
-      'datos': {
-        'idLaboratorio': idLaboratorio,
-        'nombre': nombre,
-        'ubicacion': ubicacion,
-        'capacidad': capacidad,
-      },
+    final datos = <String, dynamic>{
+      'id_laboratorio': idLaboratorio,
+      'nombre': nombre,
+      'ubicacion': ubicacion,
+      'capacidad': capacidad,
     };
 
-    await _enviarSolicitud(metodo: 'PUT', uri: Uri.parse(_baseUrl), body: body);
+    if (codigo != null) {
+      datos['codigo'] = codigo;
+    }
+
+    if (descripcion != null) {
+      datos['descripcion'] = descripcion;
+    }
+
+    final body = {
+      'usuarioAccionante': {
+        'idUsuario': idUsuarioAccionante,
+      },
+      'datos': datos,
+    };
+
+    await _enviarSolicitud(
+      metodo: 'PUT',
+      uri: Uri.parse(_baseUrl),
+      body: body,
+    );
   }
 
   // ============================================================
-  // MÉTODO: CAMBIAR ESTADO DEL LABORATORIO
+  // PATCH: CAMBIAR ESTADO
   // PATCH /api/Laboratorio/{id}/estado
   // ============================================================
 
   Future<void> cambiarEstadoLaboratorio({
+    required int idUsuarioAccionante,
     required int idLaboratorio,
     required bool nuevoEstado,
   }) async {
-    if (idLaboratorio <= 0) {
-      throw Exception('El ID del laboratorio no es válido.');
+    if (idUsuarioAccionante <= 0 || idLaboratorio <= 0) {
+      throw Exception(
+        'Los identificadores son inválidos.',
+      );
     }
 
-    final body = {'activo': nuevoEstado};
+    final body = {
+      'usuarioAccionante': {
+        'idUsuario': idUsuarioAccionante,
+      },
+      'datos': {
+        'activo': nuevoEstado,
+      },
+    };
 
     await _enviarSolicitud(
       metodo: 'PATCH',
