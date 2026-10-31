@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 
 import '../prestamos/prestamo_screen.dart';
 
+import '../sesion/sesion_usuario.dart';
+
 class QrResultadoScreen extends StatelessWidget {
   final Map<String, dynamic> equipo;
 
@@ -42,15 +44,32 @@ class QrResultadoScreen extends StatelessWidget {
           const SizedBox(height: 24),
 
           Card(
-            child: Column(
-              children: [
-                _dato('Código de inventario', equipo['codigoInventario']),
-                _dato('Código QR', equipo['codigoQR']),
-                _dato('Número de serie', equipo['numeroSerie']),
-                _dato('Laboratorio', equipo['laboratorio']),
-                _dato('Estado', equipo['estado']),
-                _dato('Observaciones', equipo['observaciones']),
-              ],
+            child: LayoutBuilder(
+              builder: (context, constraints) {
+                final dosColumnas = constraints.maxWidth >= 700;
+                final anchoCampo = dosColumnas
+                    ? constraints.maxWidth / 2
+                    : constraints.maxWidth;
+
+                final campos = <Widget>[
+                  _dato('Código de inventario', equipo['codigoInventario']),
+                  _dato('Código QR', equipo['codigoQR']),
+                  _dato('Tipo de equipo', equipo['tipoEquipo']),
+                  _dato('Marca', equipo['marca']),
+                  _dato('Modelo', equipo['modelo']),
+                  _dato('Descripción', equipo['descripcion']),
+                  _dato('Número de serie', equipo['numeroSerie']),
+                  _dato('Laboratorio', equipo['laboratorio']),
+                  _dato('Estado', equipo['estado']),
+                  _dato('Observaciones', equipo['observaciones']),
+                ];
+
+                return Wrap(
+                  children: campos.map((campo) {
+                    return SizedBox(width: anchoCampo, child: campo);
+                  }).toList(),
+                );
+              },
             ),
           ),
 
@@ -64,10 +83,26 @@ class QrResultadoScreen extends StatelessWidget {
           else if (disponible)
             FilledButton.icon(
               onPressed: () {
+                final idUsuario = SesionUsuario.idUsuario;
+
+                if (idUsuario == null || idUsuario <= 0) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text(
+                        'No se encontró una sesión de usuario válida.',
+                      ),
+                    ),
+                  );
+                  return;
+                }
+
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => PrestamoScreen(equipo: equipo),
+                    builder: (context) => PrestamoScreen(
+                      equipo: equipo,
+                      idUsuarioAccionante: idUsuario,
+                    ),
                   ),
                 );
               },
