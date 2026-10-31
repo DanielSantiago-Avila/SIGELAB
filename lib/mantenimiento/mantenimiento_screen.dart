@@ -284,7 +284,7 @@ class _MantenimientoScreenState extends State<MantenimientoScreen> {
                     )
                   : ListView.separated(
                       itemCount: historial.length,
-                      separatorBuilder: (_, __) => const Divider(),
+                      separatorBuilder: (_, _) => const Divider(),
                       itemBuilder: (context, index) {
                         final item = historial[index];
 
