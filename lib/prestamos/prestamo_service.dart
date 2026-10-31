@@ -125,7 +125,7 @@ class PrestamoService {
 
     // Pendiente: confirmar la ruta POST exacta con el backend.
     // No enviar la solicitud hasta configurar ese endpoint.
-    const String rutaRegistro = '';
+const String rutaRegistro = '/api/Prestamo';
 
     if (rutaRegistro.isEmpty) {
       throw StateError(

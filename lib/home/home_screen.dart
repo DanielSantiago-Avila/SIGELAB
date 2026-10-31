@@ -74,8 +74,8 @@ class _HomeScreenState extends State<HomeScreen> {
     _MenuEntry(index: 5, icon: Icons.front_hand_outlined, title: 'Préstamos'),
     _MenuEntry(index: 6, icon: Icons.replay, title: 'Devoluciones'),
     _MenuEntry(index: 7, icon: Icons.build_outlined, title: 'Mantenimiento'),
-    _MenuEntry(index: 8, icon: Icons.bar_chart_outlined, title: 'Reportes'),
-    _MenuEntry(index: 9, icon: Icons.fact_check_outlined, title: 'Auditoría'),
+//    _MenuEntry(index: 8, icon: Icons.bar_chart_outlined, title: 'Reportes'),
+//    _MenuEntry(index: 9, icon: Icons.fact_check_outlined, title: 'Auditoría'),
     _MenuEntry(index: 10, icon: Icons.qr_code_scanner, title: 'Escanear QR'),
   ];
 

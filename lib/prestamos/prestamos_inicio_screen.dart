@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../qr/qr_scanner_screen.dart';
 import 'prestamo_screen.dart';
 
+import '../sesion/sesion_usuario.dart';
+
 class PrestamosInicioScreen extends StatefulWidget {
   const PrestamosInicioScreen({super.key});
 
@@ -45,10 +47,23 @@ class _PrestamosInicioScreenState extends State<PrestamosInicioScreen> {
         );
       }
 
-      await Navigator.push(
-        context,
-        MaterialPageRoute(builder: (_) => PrestamoScreen(equipo: equipo)),
-      );
+        final idUsuario = SesionUsuario.idUsuario;
+
+        if (idUsuario == null || idUsuario <= 0) {
+          throw const FormatException(
+            'No se encontró una sesión de usuario válida.',
+          );
+        }
+
+        await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => PrestamoScreen(
+              equipo: equipo,
+              idUsuarioAccionante: idUsuario,
+            ),
+          ),
+        );
     } catch (error) {
       if (!mounted) return;
 

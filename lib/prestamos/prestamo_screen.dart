@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 
 import 'prestamo_service.dart';
 
-import '../sesion/sesion_usuario.dart';
-
 class PrestamoScreen extends StatefulWidget {
   final Map<String, dynamic> equipo;
+  final int idUsuarioAccionante;
 
-  const PrestamoScreen({super.key, required this.equipo});
+  const PrestamoScreen({
+    super.key,
+    required this.equipo,
+    required this.idUsuarioAccionante,
+  });
 
   @override
   State<PrestamoScreen> createState() => _PrestamoScreenState();
@@ -27,6 +30,7 @@ class _PrestamoScreenState extends State<PrestamoScreen> {
   bool _cargando = true;
   bool _validando = false;
   bool _autorizado = false;
+  bool _registrando = false;
 
   String? _error;
   String? _mensajeValidacion;
@@ -99,12 +103,12 @@ class _PrestamoScreenState extends State<PrestamoScreen> {
       final autorizado = permiso && puedePrestarse;
 
       debugPrint('========== VALIDACIÓN PRÉSTAMO ==========');
-debugPrint('Solicitante: $idSolicitante');
-debugPrint('Equipo: ${widget.equipo['codigoInventario']}');
-debugPrint('Permiso del solicitante: $permiso');
-debugPrint('Equipo puede prestarse: $puedePrestarse');
-debugPrint('Autorización final: $autorizado');
-debugPrint('========================================');
+      debugPrint('Solicitante: $idSolicitante');
+      debugPrint('Equipo: ${widget.equipo['codigoInventario']}');
+      debugPrint('Permiso del solicitante: $permiso');
+      debugPrint('Equipo puede prestarse: $puedePrestarse');
+      debugPrint('Autorización final: $autorizado');
+      debugPrint('========================================');
 
       if (!mounted || _idSolicitante != idSolicitante) return;
 
@@ -179,11 +183,12 @@ debugPrint('========================================');
         '${dosDigitos(fecha.minute)}';
   }
 
-  void _prepararRegistro() {
+  Future<void> _prepararRegistro() async {
+    if (_registrando) return;
+
     if (!_autorizado || _idSolicitante == null) {
       return;
     }
-
     if (_fechaDevolucion == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Selecciona una fecha de devolución.')),
@@ -211,6 +216,17 @@ debugPrint('========================================');
       return;
     }
 
+    final int idUsuario = widget.idUsuarioAccionante;
+
+    if (idUsuario <= 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('No se encontró una sesión de usuario válida.'),
+        ),
+      );
+      return;
+    }
+
     // El formulario ya reúne los datos necesarios:
     // _idSolicitante
     // _fechaDevolucion
@@ -220,22 +236,42 @@ debugPrint('========================================');
     // Falta confirmar el endpoint POST y obtener el
     // idUsuario real de la sesión autenticada.
 
-    final int? idUsuario = SesionUsuario.idUsuario;
+    setState(() => _registrando = true);
 
-if (idUsuario == null) {
-  throw StateError(
-    'Debes iniciar sesión para registrar un préstamo.',
-  );
-}
+    try {
+      final resultado = await _service.registrarPrestamo(
+        idUsuario: idUsuario,
+        idSolicitante: _idSolicitante!,
+        fechaDevolucionEsperada: _fechaDevolucion!,
+        idsEquipos: [idEquipo],
+        observaciones: _observacionesController.text.trim(),
+      );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Formulario listo. Pendiente conectar el endpoint '
-          'POST y el usuario autenticado.',
-        ),
-      ),
-    );
+      if (!mounted) return;
+
+      if (resultado['exito'] != true) {
+        throw Exception(
+          resultado['mensaje']?.toString() ??
+              'El servidor rechazó el préstamo.',
+        );
+      }
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Préstamo registrado correctamente.')),
+      );
+
+      Navigator.pop(context, true);
+    } catch (error) {
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('No se pudo registrar el préstamo: $error')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _registrando = false);
+      }
+    }
   }
 
   @override
