@@ -1,4 +1,3 @@
-
 class TipoEquipo {
   final int idTipoEquipo;
   final String codigo;
@@ -27,8 +26,9 @@ class TipoEquipo {
       marca: json['marca'] as String?,
       modelo: json['modelo'] as String?,
       descripcion: json['descripcion'] as String?,
-      activo: json['activo'] == true ||
-          json['activo'] == 1,
+      activo: json['activo'] == null
+          ? true
+          : json['activo'] == true || json['activo'] == 1,
     );
   }
 

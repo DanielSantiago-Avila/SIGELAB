@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'auth_service.dart';
 import 'registro_screen.dart';
 import '../home/home_screen.dart';
+import 'dart:convert';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -42,32 +43,59 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (!mounted) return;
 
-    if (res['exito']) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(res['mensaje'] ?? '¡Bienvenido!'), 
-          backgroundColor: Colors.green,
-        ),
-      );
+   
+if (res['exito'] == true) {
+  try {
+    // El backend devuelve "datos" como texto JSON.
+    final dynamic datos = res['datos'] is String
+        ? jsonDecode(res['datos'] as String)
+        : res['datos'];
 
-      // REDIRIGIR A LA PANTALLA DE INICIO (HOME)
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const HomeScreen()),
+    if (datos is! Map) {
+      throw const FormatException(
+        'Los datos del usuario no son válidos.',
       );
-// REDIRIGIR A LA PANTALLA DE INICIO (HOME)
-Navigator.pushReplacement(
-  context,
-  MaterialPageRoute(builder: (context) => const HomeScreen()),
-);
+    }
+
+    final idUsuario = int.tryParse(
+      '${datos['id_usuario']}',
+    );
+
+    if (idUsuario == null || idUsuario <= 0) {
+      throw const FormatException(
+        'No se recibió un ID de usuario válido.',
+      );
+    }
+
+    if (!mounted) return;
+
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (context) => HomeScreen(
+          idUsuario: idUsuario,
+        ),
+      ),
+    );
+  } catch (e) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Error al obtener el usuario: $e'),
+        backgroundColor: Colors.red,
+      ),
+    );
+  }
 } else {
   ScaffoldMessenger.of(context).showSnackBar(
     SnackBar(
-      content: Text(res['mensaje'] ?? 'Error al iniciar sesión'),
+      content: Text(
+        res['mensaje'] ?? 'Error al iniciar sesión',
+      ),
       backgroundColor: Colors.red,
     ),
   );
 }
+
 
 }
 

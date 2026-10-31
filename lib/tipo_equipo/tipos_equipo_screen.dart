@@ -3,13 +3,20 @@ import 'package:flutter/material.dart';
 import 'tipo_equipo_model.dart';
 import 'tipo_equipo_service.dart';
 
+
 class TiposEquipoScreen extends StatefulWidget {
-  const TiposEquipoScreen({super.key});
+  final int? idUsuarioAccionante;
+
+  const TiposEquipoScreen({
+    super.key,
+    this.idUsuarioAccionante,
+  });
 
   @override
   State<TiposEquipoScreen> createState() =>
       _TiposEquipoScreenState();
 }
+
 
 class _TiposEquipoScreenState extends State<TiposEquipoScreen> {
   final TipoEquipoService _service = TipoEquipoService();
@@ -39,6 +46,9 @@ class _TiposEquipoScreenState extends State<TiposEquipoScreen> {
 
     try {
       final datos = await _service.listar();
+      
+debugPrint('TIPOS EQUIPO RECIBIDOS: ${datos.length}');
+
 
       if (!mounted) return;
 
@@ -47,6 +57,8 @@ class _TiposEquipoScreenState extends State<TiposEquipoScreen> {
         _cargando = false;
       });
     } catch (e) {
+      
+debugPrint('ERROR AL CARGAR TIPOS DE EQUIPO: $e');
       if (!mounted) return;
       setState(() => _cargando = false);
       _mensaje('Error al cargar: $e');
@@ -159,11 +171,30 @@ class _TiposEquipoScreenState extends State<TiposEquipoScreen> {
                             activo: equipo?.activo ?? true,
                           );
 
-                          if (editando) {
-                            await _service.actualizar(datos);
-                          } else {
-                            await _service.crear(datos);
-                          }
+                          
+
+final idUsuario = widget.idUsuarioAccionante;
+
+if (idUsuario == null) {
+  throw Exception(
+    'No se ha recibido el usuario autenticado. '
+    'Solicita la integración de la sesión.',
+  );
+}
+
+if (editando) {
+  await _service.actualizar(
+    datos,
+    idUsuarioAccionante: idUsuario,
+  );
+} else {
+  await _service.crear(
+    datos,
+    idUsuarioAccionante: idUsuario,
+  );
+}
+
+
 
                           if (!dialogContext.mounted) return;
                           Navigator.pop(dialogContext);
@@ -225,10 +256,39 @@ class _TiposEquipoScreenState extends State<TiposEquipoScreen> {
     );
   }
 
-  void _mostrarDetalle(TipoEquipo equipo) {
-    showDialog(
+ 
+Future<void> _mostrarDetalle(TipoEquipo equipo) async {
+  // Mostramos una ventana mientras consultamos AWS.
+  showDialog<void>(
+    context: context,
+    barrierDismissible: false,
+    builder: (dialogContext) => const AlertDialog(
+      content: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          CircularProgressIndicator(),
+          SizedBox(width: 20),
+          Text('Cargando detalles...'),
+        ],
+      ),
+    ),
+  );
+
+  try {
+    // Consultamos el equipo real por su ID.
+    final detalle = await _service.obtenerPorId(
+      equipo.idTipoEquipo,
+    );
+
+    if (!mounted) return;
+
+    // Cerramos la ventana de carga.
+    Navigator.of(context, rootNavigator: true).pop();
+
+    // Mostramos la información recibida desde AWS.
+    await showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         title: const Text(
           'Detalle del tipo de equipo',
           style: TextStyle(color: azul),
@@ -237,25 +297,37 @@ class _TiposEquipoScreenState extends State<TiposEquipoScreen> {
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('Código: ${equipo.codigo}'),
-            Text('Nombre: ${equipo.nombre}'),
-            Text('Marca: ${equipo.marca ?? "-"}'),
-            Text('Modelo: ${equipo.modelo ?? "-"}'),
-            Text('Descripción: ${equipo.descripcion ?? "-"}'),
+            Text('Código: ${detalle.codigo}'),
+            Text('Nombre: ${detalle.nombre}'),
+            Text('Marca: ${detalle.marca ?? "-"}'),
+            Text('Modelo: ${detalle.modelo ?? "-"}'),
             Text(
-              'Estado: ${equipo.activo ? "Activo" : "Inactivo"}',
+              'Descripción: ${detalle.descripcion ?? "-"}',
+            ),
+            Text(
+              'Estado: ${detalle.activo ? "Activo" : "Inactivo"}',
             ),
           ],
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => Navigator.pop(dialogContext),
             child: const Text('Cerrar'),
           ),
         ],
       ),
     );
+  } catch (e) {
+    if (!mounted) return;
+
+    // Cerramos la ventana de carga.
+    Navigator.of(context, rootNavigator: true).pop();
+
+    // Informamos si hubo un problema.
+    _mensaje('Error al obtener detalles: $e');
   }
+}
+
 
   Future<void> _cambiarEstado(TipoEquipo equipo) async {
     final accion = equipo.activo ? 'desactivar' : 'activar';
@@ -283,11 +355,28 @@ class _TiposEquipoScreenState extends State<TiposEquipoScreen> {
     if (confirmar != true) return;
 
     try {
-      if (equipo.activo) {
-        await _service.desactivar(equipo.idTipoEquipo);
-      } else {
-        await _service.activar(equipo.idTipoEquipo);
-      }
+      
+final idUsuario = widget.idUsuarioAccionante;
+
+if (idUsuario == null) {
+  throw Exception(
+    'No se ha recibido el usuario autenticado. '
+    'Solicita la integración de la sesión.',
+  );
+}
+
+if (equipo.activo) {
+  await _service.desactivar(
+    equipo.idTipoEquipo,
+    idUsuarioAccionante: idUsuario,
+  );
+} else {
+  await _service.activar(
+    equipo.idTipoEquipo,
+    idUsuarioAccionante: idUsuario,
+  );
+}
+
 
       if (!mounted) return;
       await _cargarEquipos();
@@ -331,6 +420,34 @@ class _TiposEquipoScreenState extends State<TiposEquipoScreen> {
                     ),
                   ],
                 ),
+                
+            OutlinedButton.icon(
+              onPressed: _cargando ? null : _cargarEquipos,
+              icon: _cargando
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                      ),
+                    )
+                  : const Icon(Icons.refresh),
+              label: Text(
+                _cargando ? 'Actualizando...' : 'Actualizar',
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: azul,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
+                side: const BorderSide(color: azul),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+            ),
+
                 ElevatedButton.icon(
                   onPressed: () => _mostrarFormulario(),
                   icon: const Icon(Icons.add),

@@ -4,19 +4,23 @@ import 'package:sigelab/laboratorio/laboratorios_screen.dart';
 import 'package:sigelab/tipo_equipo/tipos_equipo_screen.dart';
 
 
+
 class HomeScreen extends StatefulWidget {
+  final int idUsuario;
   final String nombreUsuario;
   final String rol;
 
   const HomeScreen({
     super.key,
-    this.nombreUsuario = 'Gerson Jiménez',
+    required this.idUsuario,
+    this.nombreUsuario = 'Usuario',
     this.rol = 'Administrador',
   });
 
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
+
 
 class _HomeScreenState extends State<HomeScreen> {
   int _selectedIndex = 0;
@@ -445,9 +449,11 @@ class _HomeScreenState extends State<HomeScreen> {
     switch (_selectedIndex) {
       case 2:
         return const LaboratoriosScreen(); // Vista real conectada a BD
+      
       case 3:
-        return const TiposEquipoScreen();
-
+        return TiposEquipoScreen(
+          idUsuarioAccionante: widget.idUsuario,
+        );
       default:
         return Center(
           child: Padding(
