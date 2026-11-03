@@ -43,9 +43,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (usuario.isEmpty || password.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Ingresa usuario y contraseña'),
-        ),
+        const SnackBar(content: Text('Ingresa usuario y contraseña')),
       );
       return;
     }
@@ -61,10 +59,7 @@ class _LoginScreenState extends State<LoginScreen> {
     // ==========================================================
 
     try {
-      respuesta = await _authService.iniciarSesion(
-        usuario,
-        password,
-      );
+      respuesta = await _authService.iniciarSesion(usuario, password);
     } catch (e) {
       if (!mounted) return;
 
@@ -84,6 +79,8 @@ class _LoginScreenState extends State<LoginScreen> {
 
     if (!mounted) return;
 
+    setState(() => _cargando = false);
+
     setState(() {
       _cargando = false;
     });
@@ -96,8 +93,7 @@ class _LoginScreenState extends State<LoginScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            respuesta['mensaje']?.toString() ??
-                'Error al iniciar sesión',
+            respuesta['mensaje']?.toString() ?? 'Error al iniciar sesión',
           ),
           backgroundColor: Colors.red,
         ),
@@ -128,16 +124,12 @@ class _LoginScreenState extends State<LoginScreen> {
       } else if (datosRaw is Map) {
         datosLogin = Map<String, dynamic>.from(datosRaw);
       } else {
-        throw const FormatException(
-          'No se recibieron los datos del usuario.',
-        );
+        throw const FormatException('No se recibieron los datos del usuario.');
       }
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(
-            'No se pudieron procesar los datos del usuario: $e',
-          ),
+          content: Text('No se pudieron procesar los datos del usuario: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -149,8 +141,7 @@ class _LoginScreenState extends State<LoginScreen> {
     // OBTENER Y VALIDAR ID DEL USUARIO
     // ==========================================================
 
-    final idRaw = datosLogin['id_usuario'] ??
-        datosLogin['idUsuario'];
+    final idRaw = datosLogin['id_usuario'] ?? datosLogin['idUsuario'];
 
     final idUsuario = idRaw is num
         ? idRaw.toInt()
@@ -159,9 +150,7 @@ class _LoginScreenState extends State<LoginScreen> {
     if (idUsuario == null || idUsuario <= 0) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text(
-            'No se recibió un ID de usuario válido.',
-          ),
+          content: Text('No se recibió un ID de usuario válido.'),
           backgroundColor: Colors.red,
         ),
       );
@@ -175,11 +164,28 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final nombre = datosLogin['nombre']?.toString() ?? '';
     final apellido = datosLogin['apellido']?.toString() ?? '';
-
+    final idRolRaw = datosLogin['id_rol'] ?? datosLogin['idRol'];
+    final int? idRol = idRolRaw is num
+        ? idRolRaw.toInt()
+        : int.tryParse(idRolRaw?.toString() ?? '');
     final nombreCompleto = '$nombre $apellido'.trim();
 
-    final nombreUsuario =
-        datosLogin['usuario']?.toString() ?? nombreCompleto;
+    final String nombreRol =
+        (datosLogin['nombre_rol'] ??
+                datosLogin['nombreRol'] ??
+                datosLogin['rol'] ??
+                '')
+            .toString()
+            .trim()
+            .toUpperCase();
+
+    if (idRol == null || idRol <= 0 || nombreRol.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('El servidor no devolvió un rol válido.')),
+      );
+      return;
+    }
+    final nombreUsuario = datosLogin['usuario']?.toString() ?? nombreCompleto;
 
     // ==========================================================
     // GUARDAR SESIÓN DEL USUARIO
@@ -189,11 +195,15 @@ class _LoginScreenState extends State<LoginScreen> {
       id: idUsuario,
       nombreUsuario: nombreUsuario,
       nombreCompleto: nombreCompleto,
+      rol: idRol,
+      nombreDelRol: nombreRol,
     );
 
-    debugPrint(
-      'SESIÓN GUARDADA: ID ${SesionUsuario.idUsuario}',
-    );
+    debugPrint('ID Usuario: ${SesionUsuario.idUsuario}');
+    debugPrint('ID Rol: ${SesionUsuario.idRol}');
+    debugPrint('Nombre Rol: ${SesionUsuario.nombreRol}');
+    debugPrint('Es ADMIN: ${SesionUsuario.esAdministrador}');
+    debugPrint('SESIÓN GUARDADA: ID ${SesionUsuario.idUsuario}');
 
     // ==========================================================
     // ACCEDER AL RECONOCIMIENTO FACIAL
@@ -204,10 +214,7 @@ class _LoginScreenState extends State<LoginScreen> {
     Navigator.pushReplacementNamed(
       context,
       '/reconocimiento',
-      arguments: {
-        'idUsuario': idUsuario,
-        'esRegistro': false,
-      },
+      arguments: {'idUsuario': idUsuario, 'esRegistro': false},
     );
   }
 
@@ -220,20 +227,14 @@ class _LoginScreenState extends State<LoginScreen> {
     return Scaffold(
       body: Center(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(
-            horizontal: 24,
-            vertical: 32,
-          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
           child: Center(
             child: ConstrainedBox(
-              constraints: const BoxConstraints(
-                maxWidth: 420,
-              ),
+              constraints: const BoxConstraints(maxWidth: 420),
               child: Card(
-                elevation:
-                    Theme.of(context).brightness == Brightness.dark
-                        ? 2
-                        : 4,
+                elevation: Theme.of(context).brightness == Brightness.dark
+                    ? 2
+                    : 4,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16),
                 ),
@@ -243,11 +244,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     mainAxisSize: MainAxisSize.min,
                     crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      const Icon(
-                        Icons.school,
-                        size: 70,
-                        color: Colors.blue,
-                      ),
+                      const Icon(Icons.school, size: 70, color: Colors.blue),
 
                       const SizedBox(height: 12),
 
@@ -262,7 +259,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 28),
 
                       // USUARIO
-
                       TextField(
                         controller: _usuarioController,
                         textInputAction: TextInputAction.next,
@@ -270,9 +266,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           labelText: 'Usuario',
                           prefixIcon: Icon(Icons.person),
                           border: OutlineInputBorder(
-                            borderRadius: BorderRadius.all(
-                              Radius.circular(10),
-                            ),
+                            borderRadius: BorderRadius.all(Radius.circular(10)),
                           ),
                         ),
                       ),
@@ -280,7 +274,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 16),
 
                       // CONTRASEÑA
-
                       TextField(
                         controller: _passwordController,
                         obscureText: _ocultarPassword,
@@ -301,15 +294,12 @@ class _LoginScreenState extends State<LoginScreen> {
                             ),
                             onPressed: () {
                               setState(() {
-                                _ocultarPassword =
-                                    !_ocultarPassword;
+                                _ocultarPassword = !_ocultarPassword;
                               });
                             },
                           ),
                           border: const OutlineInputBorder(
-                            borderRadius: BorderRadius.all(
-                              Radius.circular(10),
-                            ),
+                            borderRadius: BorderRadius.all(Radius.circular(10)),
                           ),
                         ),
                       ),
@@ -317,7 +307,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 24),
 
                       // BOTÓN INICIAR SESIÓN
-
                       SizedBox(
                         width: double.infinity,
                         height: 48,
@@ -339,9 +328,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 )
                               : const Text(
                                   'Iniciar Sesión',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                  ),
+                                  style: TextStyle(fontSize: 16),
                                 ),
                         ),
                       ),
@@ -349,7 +336,6 @@ class _LoginScreenState extends State<LoginScreen> {
                       const SizedBox(height: 16),
 
                       // REGISTRO DE USUARIO
-
                       TextButton(
                         onPressed: _cargando
                             ? null
